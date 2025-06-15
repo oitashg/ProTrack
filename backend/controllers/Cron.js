@@ -1,4 +1,4 @@
-import Cron from "../models/Cron";
+import Cron from "../models/Cron.js";
 
 // Get current schedule
 export async function getCurrentSchedule(req, res) {

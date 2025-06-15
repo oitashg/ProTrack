@@ -1,5 +1,6 @@
 const express = require('express');
 const app = express()
+const cors = require('cors')
 
 const studentRoutes = require('./routes/Student')
 const cronRoutes= require('./routes/Cron')
@@ -25,7 +26,7 @@ app.use(
 app.use("/api/student", studentRoutes)
 app.use("/api/cron", cronRoutes)
 
-cronRunner(app)
+// cronRunner(app)
 
 //def route
 app.get("/", (req,res) => {

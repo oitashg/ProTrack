@@ -1,5 +1,5 @@
-import Student from "../models/Student";
-import { syncStudent } from "../services/codeforcesSync";
+import Student from "../models/Student.js";
+import { syncStudent } from "../services/codeforcesSync.js";
 
 export async function syncStudents(req, res) {
     try{

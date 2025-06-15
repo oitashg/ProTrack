@@ -1,4 +1,4 @@
-import Student from "../models/Student";
+import Student from "../models/Student.js";
 
 export async function editStudent(req, res) {
     try {
