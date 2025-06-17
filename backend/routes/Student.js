@@ -1,15 +1,11 @@
 const express = require('express');
 const router = express.Router();
 
-const {addStudent} = require('../controllers/AddStudent')
-const {editStudent} = require('../controllers/EditStudent')
-const {deleteStudent} = require('../controllers/DeleteStudent')
-const {syncStudents} = require('../controllers/SyncStudent')
-const {reminderEmail} = require('../controllers/ReminderEmail')
+const {addStudent, editStudent, deleteStudent, syncStudents, reminderEmail} = require('../controllers/Student')
 
 router.post("/add", addStudent)
 router.post("/edit", editStudent)
-router.post("/delete", deleteStudent)
+router.delete("/delete", deleteStudent)
 router.put('/:id', syncStudents)
 router.put('/:id/email', reminderEmail)
 

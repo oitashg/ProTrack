@@ -2,7 +2,12 @@ const mongoose = require("mongoose")
 
 const studentSchema = new mongoose.Schema(
     {
-        name: {
+        firstName: {
+            type: String,
+            required: true,
+            trim: true,
+        },
+        lastName: {
             type: String,
             required: true,
             trim: true,
@@ -17,12 +22,12 @@ const studentSchema = new mongoose.Schema(
             required: true,
             trim: true,
         },
-        cfHandle: {
+        handle: {
             type: String,
             required: true,
             trim: true,
         },
-        currentRating: {
+        rating: {
             type: Number,
             required: true,
             default: 0,
