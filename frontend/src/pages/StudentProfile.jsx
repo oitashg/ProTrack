@@ -64,7 +64,8 @@ export default function StudentProfile() {
       });
       const heatmapArray = Object.entries(dateCounts).map(([date, count]) => ({ date, count }));
       setHeatmapData(heatmapArray);
-    } else {
+    } 
+    else {
       setStats({ hardest: null, total: 0, avgRating: 0, avgPerDay: 0 });
       setRatingBuckets({ labels: [], counts: [] });
       setHeatmapData([]);
@@ -73,6 +74,7 @@ export default function StudentProfile() {
 
   return (
     <div className="p-4 space-y-8">
+      
       {/* Contest History */}
       <section>
         <h2 className="text-xl font-semibold mb-2">Contest History</h2>

@@ -1,59 +1,48 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import CFHandleModal from '../components/CFHandleModal';
+import { deleteStudent, fetchAllStudents, toggleEmailSetting } from '../services/operations/studentAPI.js';
 
 export default function StudentTable() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [isAdd, setIsAdd] = useState(false); // Track if modal is for adding or editing
+  const [id, setId] = useState('');
 
-  useEffect(() => {
-    fetchStudents();
-  }, []);
-
-  const fetchStudents = async () => {
-    try {
+  const fetchStudentsData = async () => {
+    try{
       setLoading(true);
-      const { data } = await axios.get('/api/students');
-      setStudents(data);
-    } 
-    catch (err) {
-      console.error('Failed to fetch students', err);
-    } 
-    finally {
+      //store data of all students from the database
+      const studentData = await fetchAllStudents()
+      console.log("studentData : ", studentData);
+
+      setStudents(studentData);
       setLoading(false);
     }
-  };
-
-  const handleAdd = () => {
-    // TODO: Open add-student modal or navigate to add form
-    navigate('/students/new');
-  };
-
-  const handleEdit = (id) => {
-    // TODO: Open edit modal or navigate to edit form
-    navigate(`/students/${id}/edit`);
-  };
-
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this student?')) return;
-    try {
-      await axios.delete(`/api/students/${id}`);
-      setStudents((prev) => prev.filter((s) => s._id !== id));
-    } catch (err) {
-      console.error('Failed to delete student', err);
+    catch(error){
+      console.log("Could not fetch students data")
     }
-  };
+  }
 
+  useEffect(() => {
+    //it was being called twice due to strict mode in react
+    fetchStudentsData()
+  }, []);
+
+  //done
   const handleDownloadCSV = () => {
-    const header = ['Name', 'Email', 'Phone', 'CF Handle', 'Current Rating', 'Max Rating'];
+    const header = ['First name', 'Last name', 'Email', 'Phone', 'Codeforces Handle', 'Current Rating', 'Max Rating', 'Last Sync', 'Reminders Sent', 'Auto Email'];
     const rows = students.map(s => [
-      s.name,
+      s.firstName,
+      s.lastName,
       s.email,
       s.phone,
-      s.cfHandle,
-      s.currentRating,
-      s.maxRating
+      s.handle,
+      s.rating,
+      s.maxRating,
+      s.lastSync,
+      s.remindersSent,
+      s.emailDisabled ? 'Off' : 'On'
     ]);
     const csvContent = [header, ...rows]
       .map(e => e.join(','))
@@ -66,21 +55,6 @@ export default function StudentTable() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  };
-
-
-  // inside StudentTable component
-  const toggleEmail = async (id, currentlyDisabled) => {
-    try {
-      const { data: updated } = await axios.put(`/api/students/${id}/email-settings`, {
-        emailDisabled: !currentlyDisabled
-      });
-      setStudents((prev) =>
-        prev.map((s) => (s._id === id ? updated : s))
-      );
-    } catch (err) {
-      console.error('Failed to toggle email setting:', err);
-    }
   };
 
   const handleViewDetails = (id) => {
@@ -101,22 +75,13 @@ export default function StudentTable() {
             Download CSV
           </button>
           <button
-            onClick={handleAdd}
+            onClick={() => {
+              setIsAdd(true)
+              setModalOpen(true)}
+            }
             className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
           >
             Add Student
-          </button>
-          <button
-            onClick={handleEdit}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Edit Student
-          </button>
-          <button
-            onClick={handleDelete}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Delete Student
           </button>
         </div>
       </div>
@@ -124,7 +89,8 @@ export default function StudentTable() {
       <table className="min-w-full bg-white border">
         <thead>
           <tr>
-            <th className="px-4 py-2 border">Name</th>
+            <th className="px-4 py-2 border">First name</th>
+            <th className="px-4 py-2 border">Last name</th>
             <th className="px-4 py-2 border">Email</th>
             <th className="px-4 py-2 border">Phone</th>
             <th className="px-4 py-2 border">CF Handle</th>
@@ -139,31 +105,47 @@ export default function StudentTable() {
         <tbody>
           {students.map((s) => (
             <tr key={s._id} className="text-center hover:bg-gray-50">
-              <td className="px-4 py-2 border">{s.name}</td>
+              <td className="px-4 py-2 border">{s.firstName}</td>
+              <td className="px-4 py-2 border">{s.lastName}</td>
               <td className="px-4 py-2 border">{s.email}</td>
               <td className="px-4 py-2 border">{s.phone}</td>
-              <td className="px-4 py-2 border">{s.cfHandle}</td>
-              <td className="px-4 py-2 border">{s.currentRating}</td>
+              <td className="px-4 py-2 border">{s.handle}</td>
+              <td className="px-4 py-2 border">{s.rating}</td>
               <td className="px-4 py-2 border">{s.maxRating}</td>
-              <td className="px-4 py-2 border">{s.lastSync ? new Date(s.lastSync).toLocaleString() : '—'}</td>
+              <td className="px-4 py-2 border">{s.lastSync}</td>
               <td className="px-4 py-2 border">{s.remindersSent}</td>
               <td className="px-4 py-2 border">
                 <label className="inline-flex items-center">
                   <input
                     type="checkbox"
                     checked={!s.emailDisabled}
-                    onChange={() => toggleEmail(s._id, s.emailDisabled)}
+                    onChange={() => toggleEmailSetting(s._id, s.emailDisabled)}
                     className="form-checkbox"
                   />
                   <span className="ml-2">{s.emailDisabled ? 'Off' : 'On'}</span>
                 </label>
               </td>
               <td className="px-4 py-2 border space-x-1">
-                <button
-                  onClick={() => handleViewDetails(s._id)}
+                {/* <button
+                  // onClick={() => handleViewDetails(s._id)}
                   className="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600"
                 >
                   View CF Progress
+                </button> */}
+                <button
+                  onClick={() => {
+                    setId(s._id)
+                    setModalOpen(true)}
+                  }
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Edit Student
+                </button>
+                <button
+                  onClick={() => deleteStudent(s._id)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Delete Student
                 </button>
               </td>
             </tr>
@@ -177,6 +159,13 @@ export default function StudentTable() {
           )}
         </tbody>
       </table>
+
+      <CFHandleModal
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        isAddMode={isAdd}
+        id={id}
+      />
     </div>
   );
 }
