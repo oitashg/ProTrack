@@ -4,12 +4,12 @@ const studentSchema = new mongoose.Schema(
     {
         firstName: {
             type: String,
-            required: true,
+            // required: true,
             trim: true,
         },
         lastName: {
             type: String,
-            required: true,
+            // required: true,
             trim: true,
         },
         email: {
@@ -36,6 +36,28 @@ const studentSchema = new mongoose.Schema(
             type: Number,
             required: true,
             default: 0,
+        },
+        contests: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Contest",
+            },
+        ],
+        problems: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: "Problem",
+            },
+        ],
+        mostDifficultProblem: {
+            type: String,
+            // required: true,
+            trim: true
+        },
+        lastProblemSubmitted: {
+            type: Date,
+            // required: true,
+            default: Date.now,
         },
         createdAt: {
             type: Date,

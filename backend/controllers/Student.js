@@ -1,22 +1,35 @@
+import Contest from "../models/Contest.js";
+import Problem from "../models/Problem.js";
 import Student from "../models/Student.js";
-import { syncStudent } from "../services/codeforcesSync.js";
 import axios from "axios";
 
+//Controller to add students in the table
 export async function addStudent(req, res) {
-    try {
+    try 
+    {
         const { cfHandle } = req.body;
 
         //extract data from codeforces api
         const {data} = await axios.get(`https://codeforces.com/api/user.info?handles=${cfHandle}`)
-        console.log('Codeforces API response:', data);
+        const contestHistory = await axios.get(`https://codeforces.com/api/user.rating?handle=${cfHandle}`)
+        const problemHistory = await axios.get(`https://codeforces.com/api/user.status?handle=${cfHandle}&from1&count=1`)
+
+        //extract the required data
         const user = data?.result[0]
-        console.log('Codeforces data result :', user);
-        
+        //below both are arrays
+        const history = contestHistory?.data?.result
+        const problems = problemHistory?.data?.result
+
         //should be added in form
         const {email, phone} = req.body
 
+        // Validate user data
+        if (!user) {
+            return res.status(400).json({ message: 'User does not exist' });
+        }
+
         // Validate required fields
-        if (!user || !email || !phone) {
+        if (!email || !phone) {
             return res.status(400).json({ message: 'All fields are required' });
         }
 
@@ -33,7 +46,68 @@ export async function addStudent(req, res) {
 
         // Save to student database 
         const student = await Student.create(newStudent);
-        res.status(201).json(student);
+
+        //create student contest history profile
+        if (history.length > 0) {
+            await Promise.all(
+                history.map(contest => {
+                const contestData = {
+                    student:     student._id,
+                    contestId:   contest.contestId,
+                    contestName: contest.contestName,
+                    oldRating:   contest.oldRating,
+                    newRating:   contest.newRating,
+                    rank:        contest.rank || 0,
+                    // unsolvedProblems: contest.problemResults.filter(p => !p.points).length
+                };
+                return Contest.create(contestData);
+                })
+            );
+        }
+
+        //create student problems history profile
+        if (problems.length > 0) {
+            await Promise.all(
+                problems.map((submission) => {
+                const problemData = {
+                    student: student._id,
+                    name:    submission.problem.name,
+                    rating:  submission.problem.rating || 0,
+                    // date: new Date(submission.creationTimeSeconds * 1000),
+                };
+                return Problem.create(problemData);
+                })
+            );
+        }
+
+        // Get the created contest and problem IDs
+        const contestDataId = await Contest.find({ student: student._id }).select('_id');
+        const problemsDataId = await Problem.find({ student: student._id }).select('_id');
+
+        console.log('Length of Contest Data IDs:', contestDataId.length);
+        console.log('Length of Problems Data IDs:', problemsDataId.length);
+        
+        //add the contests and problems history to student
+        const completeStudentsData = await Student.findByIdAndUpdate(
+            student._id,
+            {
+                $push: {
+                    contests: {
+                        $each: contestDataId,
+                    },
+                    problems: {
+                        $each: problemsDataId,
+                    }
+                }
+            },
+            { new: true })
+            .populate("contests")
+            .populate("problems")
+            .exec()
+
+        console.log('Student added successfully:', student);
+        console.log('Student complete data added successfully:', completeStudentsData);
+        res.status(201).json(completeStudentsData);
     } 
     catch (error) {
         console.error('Error adding student:', error);
@@ -41,39 +115,129 @@ export async function addStudent(req, res) {
     }
 }
 
+//Controller to edit students in the table
 export async function editStudent(req, res) {
     try {
         const { cfHandle, id } = req.body;
         const student = await Student.findById(id)
         if(!student) return res.status(400).json({ message: 'Student dont exists' });
 
+        const oldContests = student.contests
+        const oldProblems = student.problems
+
         //extract data from codeforces api
         const {data} = await axios.get(`https://codeforces.com/api/user.info?handles=${cfHandle}`)
-        console.log('Codeforces API response:', data);
+        const contestHistory = await axios.get(`https://codeforces.com/api/user.rating?handle=${cfHandle}`)
+        const problemHistory = await axios.get(`https://codeforces.com/api/user.status?handle=${cfHandle}&from1&count=1`)
+
         const user = data?.result[0]
+        console.log('User data:', user);
+        const history = contestHistory?.data?.result
+        const problems = problemHistory?.data?.result
 
         //should be added in form
         const {email, phone} = req.body
 
+        // Validate user data
+        if (!user) {
+            return res.status(400).json({ message: 'User does not exist' });
+        }
+
         // Validate required fields
-        if (!user || !email || !phone) {
+        if (!email || !phone) {
             return res.status(400).json({ message: 'All fields are required' });
         }
 
-        // Find student by ID and update
-        const updatedStudent = await Student.findByIdAndUpdate(
-            id,
+        //Delete old contests
+        {
+            oldContests.length > 0 && await Contest.deleteMany({ _id: { $in: oldContests } });
+        }
+
+        //Delete old problems
+        {
+            oldProblems.length > 0 && await Problem.deleteMany({ _id: { $in: oldProblems } });
+        }
+
+        //Delete record of old contests and problems from student schema
+        await Student.findByIdAndUpdate(
+            student._id,
             {
-                firstName: user.firstName,
-                lastName: user.lastName,
-                email,
-                phone,
-                handle: user.handle,
-                rating: user.rating || 0,
-                maxRating: user.maxRating || 0,
+                $pull: {
+                    contests: { $in: oldContests },
+                    problems: { $in: oldProblems }
+                }
             },
             { new: true }
         );
+        
+        //Add new contests
+        if (history.length > 0) {
+            await Promise.all(
+                history.map(contest => {
+                const contestData = {
+                    student:     student._id,
+                    contestId:   contest.contestId,
+                    contestName: contest.contestName,
+                    oldRating:   contest.oldRating,
+                    newRating:   contest.newRating,
+                    rank:        contest.rank || 0,
+                    // unsolvedProblems: contest.problemResults.filter(p => !p.points).length
+                };
+                return Contest.create(contestData);
+                })
+            );
+        }
+
+        //Add new problems
+        if (problems.length > 0) {
+            await Promise.all(
+                problems.map((submission) => {
+                const problemData = {
+                    student: student._id,
+                    name:    submission.problem.name,
+                    rating:  submission.problem.rating || 0,
+                    // date: new Date(submission.creationTimeSeconds * 1000),
+                };
+                return Problem.create(problemData);
+                })
+            );
+        }
+
+        // Get the created contest and problem IDs
+        const contestDataId = await Contest.find({ student: id }).select('_id');
+        const problemsDataId = await Problem.find({ student: id }).select('_id');
+
+        console.log('Contest Data IDs:', contestDataId);
+        console.log('Problems Data IDs:', problemsDataId);
+        
+        // Find student by ID and update everything
+        const updatedStudent = await Student.findByIdAndUpdate(
+            student._id,
+            {
+                $set: {
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                    email,
+                    phone,
+                    handle: user.handle,
+                    rating: user.rating || 0,
+                    maxRating: user.maxRating || 0,
+                },
+                $push: {
+                    contests: {
+                        $each: contestDataId,
+                    },
+                    problems: {
+                        $each: problemsDataId,
+                    }
+                }
+            },
+            { new: true })
+            .populate("contests")
+            .populate("problems")  
+            .exec()
+
+        console.log('Student added successfully:', updatedStudent);
 
         if (!updatedStudent) {
             return res.status(404).json({ message: 'Student not found' });
@@ -87,6 +251,7 @@ export async function editStudent(req, res) {
     }
 }
 
+//Controller to delete students in the table
 export async function deleteStudent(req, res) {
     try {
         const { id } = req.body;
@@ -97,54 +262,26 @@ export async function deleteStudent(req, res) {
         }
 
         // Find and delete student
-        const student = await Student.findByIdAndDelete(id);
+        const student = await Student.findById(id)
+
         if (!student) {
             return res.status(404).json({ message: 'Student not found' });
         }
+
+        if (!student.contests) {
+            return res.status(404).json({ message: 'Student has no contest history' });
+        }
+        
+        await Student.findByIdAndDelete(id);
+        // Delete associated contests
+        await Contest.deleteMany({ _id: { $in: student.contests } });
+        // Delete associated problems
+        await Problem.deleteMany({ _id: { $in: student.problems } });
 
         res.status(200).json({ message: 'Student deleted successfully' });
     } 
     catch (error) {
         console.error('Error deleting student:', error);
-        res.status(500).json({ message: 'Server error' });
-    }
-}
-
-export async function syncStudents(req, res) {
-    try{
-        const { cfHandle, ...updates } = req.body;
-        const student = await Student.findById(req.params.id);
-        const oldHandle = student.cfHandle;
-
-        Object.assign(student, updates);
-        student.cfHandle = cfHandle;
-        await student.save();
-
-        // If handle changed, run an immediate sync for that student
-        if (oldHandle !== cfHandle) {
-            syncStudent(student).catch(console.error);
-        }
-
-        res.json(student);
-    }
-    catch(error) {
-        console.error('Error syncing student:', error);
-        res.status(500).json({ message: 'Server error' });
-    }
-}
-
-export async function reminderEmail(req, res){
-    try{
-        const { emailDisabled } = req.body;
-        const student = await Student.findByIdAndUpdate(
-            req.params.id,
-            { emailDisabled },
-            { new: true }
-        );
-        res.json(student);
-    }
-    catch(error) {
-        console.error('Error updating email preference:', error);
         res.status(500).json({ message: 'Server error' });
     }
 }

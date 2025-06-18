@@ -9,8 +9,14 @@ const contestSchema = new mongoose.Schema(
         },
         date: {
             type: Date,
-            required: true,
+            // required: true,
             default: Date.now,
+        },
+        contestId: {
+            type: String,
+            required: true,
+            unique: true,
+            trim: true,
         },
         contestName:{
             type: String,
@@ -34,7 +40,7 @@ const contestSchema = new mongoose.Schema(
         },
         unsolvedProblems: {
             type: Number,
-            required: true,
+            // required: true,
             default: 0,
         },
     }

@@ -3,10 +3,8 @@ const app = express()
 const cors = require('cors')
 
 const studentRoutes = require('./routes/Student')
-const cronRoutes= require('./routes/Cron')
 
 const database = require('./config//database')
-const cronRunner = require('./config/cron')
 
 const dotenv = require('dotenv')
 dotenv.config()
@@ -14,6 +12,8 @@ dotenv.config()
 const PORT = process.env.PORT || 4000
 
 database.connect()
+//calling the cron scheduler
+// require('./config/cron')
 
 app.use(express.json())
 app.use(
@@ -24,9 +24,6 @@ app.use(
 )
 
 app.use("/api/student", studentRoutes)
-app.use("/api/cron", cronRoutes)
-
-// cronRunner(app)
 
 //def route
 app.get("/", (req,res) => {
