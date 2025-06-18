@@ -7,8 +7,10 @@ import axios from "axios";
 export async function addStudent(req, res) {
     try 
     {
+        //should be added in form
         const { cfHandle } = req.body;
-
+        const {email, phone} = req.body
+        
         //extract data from codeforces api
         const {data} = await axios.get(`https://codeforces.com/api/user.info?handles=${cfHandle}`)
         const contestHistory = await axios.get(`https://codeforces.com/api/user.rating?handle=${cfHandle}`)
@@ -19,9 +21,6 @@ export async function addStudent(req, res) {
         //below both are arrays
         const history = contestHistory?.data?.result
         const problems = problemHistory?.data?.result
-
-        //should be added in form
-        const {email, phone} = req.body
 
         // Validate user data
         if (!user) {
@@ -118,7 +117,10 @@ export async function addStudent(req, res) {
 //Controller to edit students in the table
 export async function editStudent(req, res) {
     try {
+        //should be added in form
         const { cfHandle, id } = req.body;
+        const {email, phone} = req.body
+
         const student = await Student.findById(id)
         if(!student) return res.status(400).json({ message: 'Student dont exists' });
 
@@ -134,9 +136,6 @@ export async function editStudent(req, res) {
         console.log('User data:', user);
         const history = contestHistory?.data?.result
         const problems = problemHistory?.data?.result
-
-        //should be added in form
-        const {email, phone} = req.body
 
         // Validate user data
         if (!user) {
@@ -254,7 +253,9 @@ export async function editStudent(req, res) {
 //Controller to delete students in the table
 export async function deleteStudent(req, res) {
     try {
-        const { id } = req.body;
+        // console.log("Request body -> ", req)
+        const {id} = req.params;
+        console.log('Student ID to delete in backend:', id);
 
         // Validate ID
         if (!id) {
@@ -282,6 +283,52 @@ export async function deleteStudent(req, res) {
     } 
     catch (error) {
         console.error('Error deleting student:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+}
+
+//Controller to get all students in the table
+export async function getAllStudents(req, res) {
+    try {
+        // Fetch all students with populated contests and problems
+        const students = await Student.find()
+            .populate("contests")
+            .populate("problems")
+            .exec();
+
+        res.status(200).json(students);
+    } 
+    catch (error) {
+        console.error('Error fetching students:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+}
+
+//Controller to toggle email notifications for a student
+export async function toggleEmail(req, res) {
+    try {
+        //get that from frontend
+        const { id, isOff } = req.body;
+
+        // Validate ID
+        if (!id) {
+            return res.status(400).json({ message: 'Student id is required' });
+        }
+
+        // Find student
+        const student = await Student.findById(id);
+        if (!student) {
+            return res.status(404).json({ message: 'Student not found' });
+        }
+
+        // Update email notification setting
+        student.emailDisabled = !isOff;
+        await student.save();
+
+        res.status(200).json({ message: 'Email notification setting updated successfully', student });
+    } 
+    catch (error) {
+        console.error('Error toggling email notifications:', error);
         res.status(500).json({ message: 'Server error' });
     }
 }

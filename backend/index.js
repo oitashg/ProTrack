@@ -3,6 +3,8 @@ const app = express()
 const cors = require('cors')
 
 const studentRoutes = require('./routes/Student')
+const contestRoutes = require('./routes/Contest')
+const problemRoutes = require('./routes/Problem')
 
 const database = require('./config//database')
 
@@ -24,6 +26,8 @@ app.use(
 )
 
 app.use("/api/student", studentRoutes)
+app.use("/api/contest", contestRoutes)
+app.use("/api/problem", problemRoutes)
 
 //def route
 app.get("/", (req,res) => {
