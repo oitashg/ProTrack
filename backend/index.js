@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 4000
 
 database.connect()
 //calling the cron scheduler
-// require('./config/cron')
+require('./config/cron')
 
 app.use(express.json())
 app.use(

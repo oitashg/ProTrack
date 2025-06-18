@@ -1,11 +1,11 @@
-const nodemailer = require("nodemailer");
-const Student = require("../models/Student.js");
-const Contest = require("../models/Contest.js");
-const Problem = require("../models/Problem.js");
+import nodemailer from "nodemailer";
 import axios from "axios";
+import Student from "../models/Student.js";
+import Contest from "../models/Contest.js";
+import Problem from "../models/Problem.js";
 
 //sync meachanism to fetch data from codeforces api and update database for each student
-async function syncStudent(studentId) {
+export async function syncStudent(studentId) {
   const student = await Student.findById(studentId);
 
   if (!student) {
@@ -119,7 +119,7 @@ async function syncStudent(studentId) {
 
 // Sync all students with Codeforces handles
 // This function will be called by the cron job
-async function syncAllStudents() {
+export async function syncAllStudents() {
   //extract data of all students with cfHandle
   const students = await Student.find({ handle: { $exists: true, $ne: "" } });
   console.log("Students data -> ", students);
@@ -141,7 +141,7 @@ async function syncAllStudents() {
 }
 
 // Reminder email to students who haven't submitted in the past week
-const sendReminderEmail = async (student) => {
+export const sendReminderEmail = async (student) => {
   try {
     let transporter = nodemailer.createTransport({
       host: process.env.MAIL_HOST,
@@ -164,5 +164,3 @@ const sendReminderEmail = async (student) => {
     console.log(error.message);
   }
 };
-
-module.exports = { syncAllStudents, syncStudent, sendReminderEmail };
