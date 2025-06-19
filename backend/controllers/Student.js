@@ -7,6 +7,7 @@ import axios from "axios";
 export async function addStudent(req, res) {
     try 
     {
+        console.log('Request body:', req.body);
         //should be added in form
         const { cfHandle } = req.body;
         const {email, phone} = req.body

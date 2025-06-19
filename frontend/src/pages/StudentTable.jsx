@@ -2,14 +2,29 @@ import { useEffect, useState } from 'react';
 import CFHandleModal from '../components/CFHandleModal';
 import { deleteStudent, fetchAllStudents, toggleEmailSetting } from '../services/operations/studentAPI.js';
 import { useNavigate } from 'react-router-dom';
+import { getCronTimeAPI, setCronTimeAPI } from '../services/operations/cronAPI.js';
 
-export default function StudentTable() {
+export default function StudentTable({onChange}) {
   const [students, setStudents] = useState([]);
+  const [syncTime, setSyncTime] = useState('');
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [isAdd, setIsAdd] = useState(false); // Track if modal is for adding or editing
   const [id, setId] = useState('');
   const navigate = useNavigate()
+
+  const segments = ['Second', 'Minute', 'Hour', 'Day of Month', 'Month', 'Day of Week'];
+  const [values, setValues] = useState(Array(6).fill(''));
+  
+  const handleChange = (index, val) => {
+    const newValues = [...values];
+    newValues[index] = val;
+    setValues(newValues);
+    if (onChange) onChange(newValues.join(' '));
+  };
+
+  const updatedValues = values.join(' ')
+  console.log("Timer values : ", updatedValues);
 
   const fetchStudentsData = async () => {
     try{
@@ -26,9 +41,23 @@ export default function StudentTable() {
     }
   }
 
+  const fetchCronTime = async () => {
+    try{
+      setLoading(true);
+      //fetch cron time from the database
+      const {cronTime} = await getCronTimeAPI();
+      console.log("cronData : ", cronTime);
+      setSyncTime(cronTime);
+      setLoading(false);
+    }
+    catch(error){
+      console.log("Could not fetch cron time")
+    }
+  }
   useEffect(() => {
     //it was being called twice due to strict mode in react
-    fetchStudentsData()
+    fetchStudentsData(),
+    fetchCronTime()
   }, []);
 
   //Download CSV function
@@ -85,6 +114,35 @@ export default function StudentTable() {
           >
             Add Student
           </button>
+          {/* Cron time input */}
+          <div>
+            <div className="flex space-x-2">
+              {segments.map((label, idx) => (
+                <input
+                  key={label}
+                  type="text"
+                  placeholder={label}
+                  value={values[idx]}
+                  onChange={(e) => handleChange(idx, e.target.value)}
+                  className="w-20 p-1 border rounded text-center focus:outline-none focus:ring"
+                />
+              ))}
+            </div>
+
+            <button
+              onClick={async () => {
+                await setCronTimeAPI({updatedValues})
+                fetchCronTime()}
+              }
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              OK
+            </button>
+          </div>
+
+          <div>
+            This is the cron time - {syncTime}
+          </div>
         </div>
       </div>
 

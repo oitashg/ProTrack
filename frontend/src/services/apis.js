@@ -18,3 +18,9 @@ export const contestEndpoints = {
 export const problemEndpoints = {
     FETCH_ALL_PROBLEMS_API: `${BASE_URL}/problem/getAllProblems`,
 }
+
+//cron endpoints
+export const cronEndpoints = {
+    SET_CRON_TIME_API: `${BASE_URL}/cron/setCronTime`,
+    GET_CRON_TIME_API: `${BASE_URL}/cron/getCronTime`,
+}
