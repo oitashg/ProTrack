@@ -105,26 +105,17 @@ student-progress-management-system/
 
    ```ini
    # Backend: backend/.env
-   DB_URI=mongodb://localhost:27017/studentProgress
-   CF_API_BASE=https://codeforces.com/api
-   SMTP_HOST=smtp.gmail.com
-   SMTP_PORT=587
-   SMTP_USER=your-email@example.com
-   SMTP_PASS=your-email-password
-   SYNC_CRON=0 2 * * *       # every day at 2 AM
+   MONGODB_URL=mongodb://localhost:27017/studentProgress
+   
+   MAIL_HOST = smtp.gmail.com
+   MAIL_USER = xyz@gmail.com
+   MAIL_PASS = yourpasskey
 
    # Frontend: frontend/.env
-   REACT_APP_BACKEND_URL=http://localhost:5000
+   VITE_APP_BASE_URL=http://localhost:4000/api
    ```
 
-4. **Run database migrations** (if applicable)
-
-   ```bash
-   cd backend
-   npm run migrate
-   ```
-
-5. **Start the development server**
+4. **Start the development server**
 
    ```bash
    # Terminal 1
@@ -140,7 +131,8 @@ student-progress-management-system/
 
 ## ⚙️ Configuration
 
-* **Cron Schedule**: Modify the `SYNC_CRON` in your backend `.env` to change the sync time or frequency.
+* **Cron Schedule**: When sync time is filled by user, it is scheduled to sync the overall data of the student
+by the help of cronJob 
 * **Real-time sync**: When a student’s Codeforces handle is updated via the UI, data is fetched immediately regardless of cron.
 
 ## 🧹 Usage
@@ -150,3 +142,7 @@ student-progress-management-system/
 3. Use the filter dropdowns in **Contest History** and **Problem Data** to adjust time ranges.
 4. Toggle email reminders in the student profile to enable/disable automated emails.
 5. Download the full student list as CSV using the **Export** button.
+
+## Video Walkthrough
+
+Watch the video here -> https://drive.google.com/file/d/1iat8xsXmESEwrZj8O8_DUOqNc8vSjfZ5/view?usp=sharing`

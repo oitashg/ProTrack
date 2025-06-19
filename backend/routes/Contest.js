@@ -5,4 +5,4 @@ const { getAllContests } = require('../controllers/Contest');
 
 router.get("/getAllContests", getAllContests)
 
-module.exports = router;
+module.exports = router;  
