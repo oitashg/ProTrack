@@ -8,6 +8,23 @@ async function getCronTime() {
   console.log("Sync time set to:", syncTime);
 
   // Schedule the sync task using the retrieved cron time
+  //Sync time -> Time at which the cron job will run automatically
+
+  //   field          allowed values
+  // -----          --------------
+  // second         0-59
+  // minute         0-59
+  // hour           0-23
+  // day of month   1-31
+  // month          1-12 (or names, see below)
+  // day of week    0-7 (0 or 7 is Sunday, or use names)
+
+  //   - `*` Asterisks: Any value
+  // - `1-3,5` Ranges: Ranges and individual values
+  // - `*/2` Steps: Every two units
+
+  //Example: '0 0 2 * * *' means at 2:00 AM every day
+  
   cron.schedule(
   syncTime, 
     () =>{
