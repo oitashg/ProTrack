@@ -119,6 +119,7 @@ export default function StudentProfile() {
   return (
     <div className="p-4 space-y-8">
 
+      {/* Upper part */}
       <div className="flex gap-4 items-center justify-between">
         {/* Button to table */}
         <button
@@ -196,6 +197,7 @@ export default function StudentProfile() {
       <section>
         <h2 className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">Problem Solving Data</h2>
         <div className="mb-4">
+          
           {[7, 30, 90].map((d) => (
             <button
               key={d}
@@ -207,6 +209,7 @@ export default function StudentProfile() {
               {d} days
             </button>
           ))}
+          
         </div>
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div>
@@ -244,9 +247,12 @@ export default function StudentProfile() {
           }}
         />
 
-        <div className="mt-8">
-          <h3 className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">Submission Heatmap</h3>
+        <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-lg max-w-full overflow-auto">
+          <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-3">
+            Submission Heatmap
+          </h2>
           <CalendarHeatmap
+            className="mx-auto w-full h-64 sm:h-80"
             startDate={
               new Date(new Date().setDate(new Date().getDate() - problemDays))
             }
@@ -261,6 +267,7 @@ export default function StudentProfile() {
             showWeekdayLabels
           />
         </div>
+
       </section>
 
     </div>

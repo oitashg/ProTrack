@@ -160,7 +160,7 @@ export async function editStudent(req, res) {
         console.log('User data:', user);
         const history = contestHistory?.data?.result
         const problems = problemHistory?.data?.result
-        const allProblems = problemData?.data?.result
+        const allProblems = problemData?.data?.result?.problems
 
         const participatedContest = history.filter(c => c.contestId)
         const solvedProblems = problems.filter(sub => 

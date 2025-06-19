@@ -89,6 +89,15 @@ export default function StudentTable({onChange}) {
     document.body.removeChild(link);
   };
 
+  const describeCron = (cronExpr) => {
+    const [sec, min, hr, dom, mon, dow] = cronExpr.split(' ');
+    const time = `${String(hr).padStart(2,'0')}:${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+    const byDay   = dom === '*' ? 'every day' : `on day ${dom}`;
+    const byMonth = mon === '*' ? 'every month' : `in month ${mon}`;
+    const byWeek  = dow === '*' ? '' : `on day of week ${dow}`;
+    return `${time} — ${byDay} of ${byMonth}${byWeek ? ', ' + byWeek : ''}`;
+  }
+
   if (loading) return <p>Loading students...</p>;
 
   return (
@@ -146,7 +155,7 @@ export default function StudentTable({onChange}) {
             </button>
 
             <p className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">
-              Sync time – <span className="font-mono text-gray-900 dark:text-gray-100">{syncTime}</span>
+              Sync time ---  <span className="font-mono text-gray-900 dark:text-gray-100">{describeCron(syncTime)}</span>
             </p>
 
           </div>
