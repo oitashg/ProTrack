@@ -15,7 +15,7 @@ export async function addStudent(req, res) {
         //extract data from codeforces api
         const {data} = await axios.get(`https://codeforces.com/api/user.info?handles=${cfHandle}`)
         const contestHistory = await axios.get(`https://codeforces.com/api/user.rating?handle=${cfHandle}`)
-        const problemHistory = await axios.get(`https://codeforces.com/api/user.status?handle=${cfHandle}&from1&count=1`)
+        const problemHistory = await axios.get(`https://codeforces.com/api/user.status?handle=${cfHandle}`)
 
         //extract the required data
         const user = data?.result[0]
@@ -67,8 +67,10 @@ export async function addStudent(req, res) {
 
         //create student problems history profile
         if (problems.length > 0) {
+            const accepted = problems.filter(s => s.verdict === "OK")
+
             await Promise.all(
-                problems.map((submission) => {
+                accepted.map((submission) => {
                 const problemData = {
                     student: student._id,
                     name:    submission.problem.name,
@@ -79,7 +81,7 @@ export async function addStudent(req, res) {
                 })
             );
         }
-
+        
         // Get the created contest and problem IDs
         const contestDataId = await Contest.find({ student: student._id }).select('_id');
         const problemsDataId = await Problem.find({ student: student._id }).select('_id');
