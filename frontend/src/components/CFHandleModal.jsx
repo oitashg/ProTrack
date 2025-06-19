@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { addStudent, editStudent } from '../services/operations/studentAPI.js';
 
-export default function CFHandleModal({ isOpen, onClose, isAddMode, id}) {
+export default function CFHandleModal({ isOpen, onClose, isAddMode, setIsAdd, id, onSuccess}) {
   const [cfHandle, setCfHandle] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -10,6 +10,7 @@ export default function CFHandleModal({ isOpen, onClose, isAddMode, id}) {
     setCfHandle('');
     setEmail('');
     setPhone('');
+    setIsAdd(false)
     onClose();
   };
 
@@ -48,9 +49,10 @@ export default function CFHandleModal({ isOpen, onClose, isAddMode, id}) {
           {
             (isAddMode === true) ? (
               <button
-              onClick={() => {
-                addStudent({cfHandle,email,phone})
-                handleCancel()}
+              onClick={async () => {
+                await addStudent({cfHandle,email,phone})
+                handleCancel()
+                onSuccess()}
               }
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             >
@@ -58,9 +60,10 @@ export default function CFHandleModal({ isOpen, onClose, isAddMode, id}) {
             </button>
             ) : (
               <button
-              onClick={() => {
-                editStudent({cfHandle,email,phone,id})
-                handleCancel()}
+              onClick={async () => {
+                await editStudent({cfHandle,email,phone,id})
+                handleCancel()
+                onSuccess()}
             }
               className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             >

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import CFHandleModal from '../components/CFHandleModal';
 import { deleteStudent, fetchAllStudents, toggleEmailSetting } from '../services/operations/studentAPI.js';
+import { useNavigate } from 'react-router-dom';
 
 export default function StudentTable() {
   const [students, setStudents] = useState([]);
@@ -8,6 +9,7 @@ export default function StudentTable() {
   const [modalOpen, setModalOpen] = useState(false);
   const [isAdd, setIsAdd] = useState(false); // Track if modal is for adding or editing
   const [id, setId] = useState('');
+  const navigate = useNavigate()
 
   const fetchStudentsData = async () => {
     try{
@@ -29,7 +31,7 @@ export default function StudentTable() {
     fetchStudentsData()
   }, []);
 
-  //done
+  //Download CSV function
   const handleDownloadCSV = () => {
     const header = ['First name', 'Last name', 'Email', 'Phone', 'Codeforces Handle', 'Current Rating', 'Max Rating', 'Last Sync', 'Reminders Sent', 'Auto Email'];
     const rows = students.map(s => [
@@ -119,7 +121,10 @@ export default function StudentTable() {
                   <input
                     type="checkbox"
                     checked={!s.emailDisabled}
-                    onChange={() => toggleEmailSetting(s._id, s.emailDisabled)}
+                    onChange={async () => {
+                      await toggleEmailSetting(s._id, s.emailDisabled)
+                      fetchStudentsData()}
+                    }
                     className="form-checkbox"
                   />
                   <span className="ml-2">{s.emailDisabled ? 'Off' : 'On'}</span>
@@ -142,10 +147,19 @@ export default function StudentTable() {
                   Edit Student
                 </button>
                 <button
-                  onClick={() => deleteStudent(s._id)}
+                  onClick={async () => {
+                    await deleteStudent(s._id)
+                    fetchStudentsData()}
+                  }
                   className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
                 >
                   Delete Student
+                </button>
+                <button
+                  onClick={() => navigate(`/students/${s._id}`)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Profile
                 </button>
               </td>
             </tr>
@@ -164,7 +178,9 @@ export default function StudentTable() {
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         isAddMode={isAdd}
+        setIsAdd={setIsAdd}
         id={id}
+        onSuccess={() => fetchStudentsData()}
       />
     </div>
   );
