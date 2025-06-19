@@ -3,6 +3,7 @@ import CFHandleModal from '../components/CFHandleModal';
 import { deleteStudent, fetchAllStudents, toggleEmailSetting } from '../services/operations/studentAPI.js';
 import { useNavigate } from 'react-router-dom';
 import { getCronTimeAPI, setCronTimeAPI } from '../services/operations/cronAPI.js';
+import ThemeToggle from '../components/ThemeToggle.jsx';
 
 export default function StudentTable({onChange}) {
   const [students, setStudents] = useState([]);
@@ -88,34 +89,39 @@ export default function StudentTable({onChange}) {
     document.body.removeChild(link);
   };
 
-  const handleViewDetails = (id) => {
-    navigate(`/students/${id}`);
-  };
-
   if (loading) return <p>Loading students...</p>;
 
   return (
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-semibold">Enrolled Students</h1>
-        <div className="space-x-2">
-          <button
-            onClick={handleDownloadCSV}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-          >
-            Download CSV
-          </button>
-          <button
-            onClick={() => {
-              setIsAdd(true)
-              setModalOpen(true)}
-            }
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            Add Student
-          </button>
+    <div className="p-4 space-y-8">
+      <ThemeToggle/>
+
+      {/* Above table */}
+      <div className="flex flex-col justify-between items-center mb-4">
+        <h1 className="text-xl sm:text-5xl md:text-6xl text-gray-800 dark:text-gray-100 mb-6">Enrolled Students</h1>
+
+        <div className="flex gap-8">
+
+          {/* CSV and Add students */}
+          <div className='flex gap-4'>
+            <button
+              onClick={handleDownloadCSV}
+              className="cursor-pointer px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-2xl text-lg sm:text-xl transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-600"
+            >
+              Download CSV
+            </button>
+            <button
+              onClick={() => {
+                setIsAdd(true)
+                setModalOpen(true)}
+              }
+              className="cursor-pointer px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-2xl text-lg sm:text-xl transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-600"
+            >
+              Add Student
+            </button>
+          </div>
+
           {/* Cron time input */}
-          <div>
+          <div className='flex flex-col gap-3'>
             <div className="flex space-x-2">
               {segments.map((label, idx) => (
                 <input
@@ -124,7 +130,7 @@ export default function StudentTable({onChange}) {
                   placeholder={label}
                   value={values[idx]}
                   onChange={(e) => handleChange(idx, e.target.value)}
-                  className="w-20 p-1 border rounded text-center focus:outline-none focus:ring"
+                  className="w-12 sm:w-16 md:w-20 p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600 transition-colors duration-200"
                 />
               ))}
             </div>
@@ -134,18 +140,21 @@ export default function StudentTable({onChange}) {
                 await setCronTimeAPI({updatedValues})
                 fetchCronTime()}
               }
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              className="cursor-pointer px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-2xl text-lg sm:text-xl transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-600"
             >
               OK
             </button>
+
+            <p className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">
+              Sync time – <span className="font-mono text-gray-900 dark:text-gray-100">{syncTime}</span>
+            </p>
+
           </div>
 
-          <div>
-            This is the cron time - {syncTime}
-          </div>
         </div>
       </div>
-
+      
+      {/* Table */}
       <table className="min-w-full bg-white border">
         <thead>
           <tr>
@@ -172,7 +181,7 @@ export default function StudentTable({onChange}) {
               <td className="px-4 py-2 border">{s.handle}</td>
               <td className="px-4 py-2 border">{s.rating}</td>
               <td className="px-4 py-2 border">{s.maxRating}</td>
-              <td className="px-4 py-2 border">{s.lastSync}</td>
+              <td className="px-4 py-2 border">{new Date(s.lastSync).toLocaleDateString()} {new Date(s.lastSync).toLocaleTimeString()}</td>
               <td className="px-4 py-2 border">{s.remindersSent}</td>
               <td className="px-4 py-2 border">
                 <label className="inline-flex items-center">
@@ -188,19 +197,13 @@ export default function StudentTable({onChange}) {
                   <span className="ml-2">{s.emailDisabled ? 'Off' : 'On'}</span>
                 </label>
               </td>
-              <td className="px-4 py-2 border space-x-1">
-                {/* <button
-                  // onClick={() => handleViewDetails(s._id)}
-                  className="px-2 py-1 bg-indigo-500 text-white rounded hover:bg-indigo-600"
-                >
-                  View CF Progress
-                </button> */}
+              <td className="flex flex-col gap-2 px-4 py-2 border space-x-1">
                 <button
                   onClick={() => {
                     setId(s._id)
                     setModalOpen(true)}
                   }
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="cursor-pointer px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-2xl text-lg sm:text-xl transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-600"
                 >
                   Edit Student
                 </button>
@@ -209,13 +212,13 @@ export default function StudentTable({onChange}) {
                     await deleteStudent(s._id)
                     fetchStudentsData()}
                   }
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="cursor-pointer px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-2xl text-lg sm:text-xl transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-600"
                 >
                   Delete Student
                 </button>
                 <button
                   onClick={() => navigate(`/students/${s._id}`)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                  className="cursor-pointer px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-2xl text-lg sm:text-xl transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-600"
                 >
                   Profile
                 </button>
@@ -232,6 +235,7 @@ export default function StudentTable({onChange}) {
         </tbody>
       </table>
 
+      {/* Modal for adding/editing student */}
       <CFHandleModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}

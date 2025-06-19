@@ -7,7 +7,7 @@ import StudentProfile from './pages/StudentProfile'
 function App() {
 
   return (
-    <div className='text-3xl font-bold underline'>
+    <div className='w-screen min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900'>
       <Routes>
         <Route path='/' element={<Home/>}/>
         <Route path='/students' element={<StudentTable/>}/>

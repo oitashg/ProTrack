@@ -16,12 +16,29 @@ export async function addStudent(req, res) {
         const {data} = await axios.get(`https://codeforces.com/api/user.info?handles=${cfHandle}`)
         const contestHistory = await axios.get(`https://codeforces.com/api/user.rating?handle=${cfHandle}`)
         const problemHistory = await axios.get(`https://codeforces.com/api/user.status?handle=${cfHandle}`)
+        const problemData = await axios.get('https://codeforces.com/api/problemset.problems')
 
         //extract the required data
         const user = data?.result[0]
         //below both are arrays
         const history = contestHistory?.data?.result
         const problems = problemHistory?.data?.result
+        const allProblems = problemData?.data?.result?.problems
+
+        const participatedContest = history.map(c => c.contestId)
+        console.log("Participated Contests:", participatedContest);
+
+        const solvedProblems = problems.filter(sub => 
+            participatedContest.includes(sub.contestId) &&
+            sub.author.participantType === "CONTESTANT" &&
+            sub.verdict === "OK"
+        )
+        console.log("solved Problems:", solvedProblems);
+
+        const requiredProblems = allProblems.filter(p => 
+            participatedContest.includes(p.contestId)
+        )
+        console.log("Required Problems:", requiredProblems);
 
         // Validate user data
         if (!user) {
@@ -51,14 +68,18 @@ export async function addStudent(req, res) {
         if (history.length > 0) {
             await Promise.all(
                 history.map(contest => {
+                const eachContestSolvedProblem = solvedProblems.filter(c => c.contestId === contest.contestId);
+                const eachContestGivenProblems = requiredProblems.filter(p => p.contestId === contest.contestId);
+
                 const contestData = {
                     student:     student._id,
+                    date:        new Date(contest.ratingUpdateTimeSeconds * 1000).toISOString(),
                     contestId:   contest.contestId,
                     contestName: contest.contestName,
                     oldRating:   contest.oldRating,
                     newRating:   contest.newRating,
                     rank:        contest.rank || 0,
-                    // unsolvedProblems: contest.problemResults.filter(p => !p.points).length
+                    unsolvedProblems: eachContestGivenProblems.length - eachContestSolvedProblem.length 
                 };
                 return Contest.create(contestData);
                 })
@@ -75,7 +96,7 @@ export async function addStudent(req, res) {
                     student: student._id,
                     name:    submission.problem.name,
                     rating:  submission.problem.rating || 0,
-                    // date: new Date(submission.creationTimeSeconds * 1000),
+                    date: new Date(submission.creationTimeSeconds * 1000).toISOString(),
                 };
                 return Problem.create(problemData);
                 })
@@ -107,7 +128,6 @@ export async function addStudent(req, res) {
             .populate("problems")
             .exec()
 
-        console.log('Student added successfully:', student);
         console.log('Student complete data added successfully:', completeStudentsData);
         res.status(201).json(completeStudentsData);
     } 
@@ -134,11 +154,26 @@ export async function editStudent(req, res) {
         const {data} = await axios.get(`https://codeforces.com/api/user.info?handles=${cfHandle}`)
         const contestHistory = await axios.get(`https://codeforces.com/api/user.rating?handle=${cfHandle}`)
         const problemHistory = await axios.get(`https://codeforces.com/api/user.status?handle=${cfHandle}&from1&count=1`)
+        const problemData = await axios.get('https://codeforces.com/api/problemset.problems')
 
         const user = data?.result[0]
         console.log('User data:', user);
         const history = contestHistory?.data?.result
         const problems = problemHistory?.data?.result
+        const allProblems = problemData?.data?.result
+
+        const participatedContest = history.filter(c => c.contestId)
+        const solvedProblems = problems.filter(sub => 
+            participatedContest.includes(sub.contestId) &&
+            sub.author.participantType === "CONTESTANT" &&
+            sub.verdict === "OK"
+        )
+        console.log("solved Problems:", solvedProblems);
+
+        const requiredProblems = allProblems.filter(p => 
+            participatedContest.includes(p.contestId)
+        )
+        console.log("Required Problems:", requiredProblems);
 
         // Validate user data
         if (!user) {
@@ -176,14 +211,18 @@ export async function editStudent(req, res) {
         if (history.length > 0) {
             await Promise.all(
                 history.map(contest => {
+                const eachContestSolvedProblem = solvedProblems.filter(c => c.contestId === contest.contestId);
+                const eachContestGivenProblems = requiredProblems.filter(p => p.contestId === contest.contestId);
+
                 const contestData = {
                     student:     student._id,
+                    date:        new Date(contest.ratingUpdateTimeSeconds * 1000).toISOString(),
                     contestId:   contest.contestId,
                     contestName: contest.contestName,
                     oldRating:   contest.oldRating,
                     newRating:   contest.newRating,
                     rank:        contest.rank || 0,
-                    // unsolvedProblems: contest.problemResults.filter(p => !p.points).length
+                    unsolvedProblems: eachContestGivenProblems.length - eachContestSolvedProblem.length
                 };
                 return Contest.create(contestData);
                 })
@@ -192,13 +231,15 @@ export async function editStudent(req, res) {
 
         //Add new problems
         if (problems.length > 0) {
+            const accepted = problems.filter(s => s.verdict === "OK")
+
             await Promise.all(
-                problems.map((submission) => {
+                accepted.map((submission) => {
                 const problemData = {
                     student: student._id,
                     name:    submission.problem.name,
                     rating:  submission.problem.rating || 0,
-                    // date: new Date(submission.creationTimeSeconds * 1000),
+                    date: new Date(submission.creationTimeSeconds * 1000).toISOString(),
                 };
                 return Problem.create(problemData);
                 })

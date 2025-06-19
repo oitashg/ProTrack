@@ -6,6 +6,7 @@ import "react-calendar-heatmap/dist/styles.css";
 import { fetchAllContests } from "../services/operations/contestAPI.js";
 import { fetchAllProblems } from "../services/operations/problemAPI.js";
 import { useNavigate } from "react-router-dom";
+import ThemeToggle from "../components/ThemeToggle.jsx";
 
 export default function StudentProfile() {
   const [loading, setLoading] = useState(true);
@@ -43,6 +44,7 @@ export default function StudentProfile() {
 
       // Fetch contests for the student
       const data = await fetchAllContests();
+      console.log("Fetched contests:", data);
       setContests(data);
       const sorted = [...data].sort(
         (a, b) => new Date(a.date) - new Date(b.date)
@@ -53,7 +55,8 @@ export default function StudentProfile() {
       });
 
       setLoading(false);
-    } catch (error) {
+    } 
+    catch (error) {
       console.log("Could not fetch contest history");
     }
   };
@@ -64,6 +67,7 @@ export default function StudentProfile() {
 
       // Fetch submissions for the student
       const data = await fetchAllProblems();
+      console.log("Fetched submissions:", data);
       setSubmissions(data);
 
       // Stats
@@ -90,44 +94,52 @@ export default function StudentProfile() {
         // Heatmap data: count per date
         const dateCounts = {};
         data.forEach((s) => {
-          const d = new Date(s.when).toISOString().split("T")[0];
+          const d = new Date(s.date).toISOString().split("T")[0];
           dateCounts[d] = (dateCounts[d] || 0) + 1;
         });
         const heatmapArray = Object.entries(dateCounts).map(
           ([date, count]) => ({ date, count })
         );
         setHeatmapData(heatmapArray);
-      } else {
+      } 
+      else {
         setStats({ hardest: null, total: 0, avgRating: 0, avgPerDay: 0 });
         setRatingBuckets({ labels: [], counts: [] });
         setHeatmapData([]);
       }
 
       setLoading(false);
-    } catch (error) {
+    } 
+    catch (error) {
       console.log("Could not fetch problem data");
     }
   };
 
+  if (loading) return <p>Loading students profile...</p>;
   return (
     <div className="p-4 space-y-8">
 
-      <button
-        onClick={() => navigate(`/students`)}
-        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-      >
-        Table
-      </button>
+      <div className="flex gap-4 items-center justify-between">
+        {/* Button to table */}
+        <button
+          onClick={() => navigate(`/students`)}
+          className="cursor-pointer px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-2xl text-lg sm:text-xl transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-600"
+        >
+          Go to Student Table
+        </button>
+
+        <ThemeToggle/>
+      </div>
 
       {/* Contest History */}
       <section>
-        <h2 className="text-xl font-semibold mb-2">Contest History</h2>
+        <h2 className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">Contest History</h2>
         <div className="mb-4">
           {[30, 90, 365].map((d) => (
             <button
               key={d}
               onClick={() => setContestDays(d)}
-              className={`px-3 py-1 mr-2 rounded ${
+              className={`cursor-pointer px-3 py-1 mr-2 rounded ${
                 contestDays === d ? "bg-blue-600 text-white" : "bg-gray-200"
               }`}
             >
@@ -143,6 +155,7 @@ export default function StudentProfile() {
             ],
           }}
         />
+
         <table className="min-w-full bg-white border mt-4">
           <thead>
             <tr>
@@ -181,7 +194,7 @@ export default function StudentProfile() {
 
       {/* Problem Solving Data */}
       <section>
-        <h2 className="text-xl font-semibold mb-2">Problem Solving Data</h2>
+        <h2 className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">Problem Solving Data</h2>
         <div className="mb-4">
           {[7, 30, 90].map((d) => (
             <button
@@ -197,19 +210,31 @@ export default function StudentProfile() {
         </div>
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div>
-            <strong>Most Difficult Solved:</strong>{" "}
-            {stats.hardest
-              ? `${stats.hardest.rating} (${stats.hardest.problemId})`
-              : "—"}
+            <strong className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">Most Difficult Solved:</strong>{" "}
+            <span className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
+              {stats.hardest
+                ? `${stats.hardest.rating} (${stats.hardest.name})`
+                : "—"
+              }
+            </span>
           </div>
           <div>
-            <strong>Total Solved:</strong> {stats.total}
+            <strong className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">Total Solved:</strong>
+            <span className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
+              {stats.total}
+            </span>
           </div>
           <div>
-            <strong>Avg. Rating:</strong> {stats.avgRating}
+            <strong className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">Avg. Rating:</strong>
+            <span className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
+              {stats.avgRating}
+            </span>
           </div>
           <div>
-            <strong>Avg. per Day:</strong> {stats.avgPerDay}
+            <strong className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">Avg. per Day:</strong>
+            <span className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
+              {stats.avgPerDay}
+            </span>
           </div>
         </div>
         <Bar
@@ -220,7 +245,7 @@ export default function StudentProfile() {
         />
 
         <div className="mt-8">
-          <h3 className="font-semibold mb-2">Submission Heatmap</h3>
+          <h3 className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">Submission Heatmap</h3>
           <CalendarHeatmap
             startDate={
               new Date(new Date().setDate(new Date().getDate() - problemDays))
@@ -237,6 +262,7 @@ export default function StudentProfile() {
           />
         </div>
       </section>
+
     </div>
   );
 }
