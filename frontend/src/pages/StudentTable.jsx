@@ -203,7 +203,7 @@ export default function StudentTable({onChange}) {
                     }
                     className="form-checkbox"
                   />
-                  <span className="ml-2">{s.emailDisabled ? 'Off' : 'On'}</span>
+                  {/* <span className="ml-2">{s.emailDisabled ? 'Off' : 'On'}</span> */}
                 </label>
               </td>
               <td className="flex flex-col gap-2 px-4 py-2 border space-x-1">

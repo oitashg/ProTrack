@@ -33,16 +33,19 @@ export async function syncStudent(studentId) {
   //Add new contests and update contest schema
   const upsertedContests = await Promise.all(
     history.map((c) =>
+      
       Contest.findOneAndUpdate(
         //filter criteria
         { student: student._id, contestId: c.contestId },
         {
           student: student._id,
+          date: new Date(c.ratingUpdateTimeSeconds * 1000).toISOString(),
           contestId: c.contestId,
           contestName: c.contestName,
           oldRating: c.oldRating,
           newRating: c.newRating,
           rank: c.rank || 0,
+          // unsolvedProblems: eachContestGivenProblems.length - eachContestSolvedProblem.length 
         },
         { upsert: true, new: true, setDefaultsOnInsert: true }
       )
@@ -58,7 +61,7 @@ export async function syncStudent(studentId) {
           student: student._id,
           name: s.problem.name,
           rating: s.problem.rating || 0,
-          // date:      new Date(s.creationTimeSeconds * 1000), // Convert seconds to milliseconds
+          date: new Date(s.creationTimeSeconds * 1000).toISOString(), // Convert seconds to milliseconds
         },
         { upsert: true, new: true, setDefaultsOnInsert: true }
       );
@@ -98,7 +101,7 @@ export async function syncStudent(studentId) {
     .populate("problems")
     .exec();
 
-  console.log("Student added successfully:", updatedStudent);
+  console.log("Student synced successfully:", updatedStudent);
 
   // 2) Inactivity detection
   if (!student.emailDisabled) {
