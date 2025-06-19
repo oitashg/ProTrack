@@ -4,6 +4,7 @@ import { problemEndpoints } from "../apis";
 
 const { FETCH_ALL_PROBLEMS_API } = problemEndpoints;
 
+// Function to fetch all problems from the API
 export const fetchAllProblems = async () => {
   let result = [];
   const toastId = toast.loading("Loading...");

@@ -6,6 +6,7 @@ export default function CFHandleModal({ isOpen, onClose, isAddMode, setIsAdd, id
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
 
+  // Reset state when modal closes
   const handleCancel = () => {
     setCfHandle('');
     setEmail('');

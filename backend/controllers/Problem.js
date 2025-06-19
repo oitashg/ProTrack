@@ -1,5 +1,6 @@
 import Problem from "../models/Problem.js";
 
+// Function to get all problems for a specific student
 export async function getAllProblems(req, res) {
     try {
         // Fetch all problem history

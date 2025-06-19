@@ -1,5 +1,6 @@
 import Cron from "../models/Cron.js";
 
+// Function to set cron time
 export async function setCronTimeHandler(req, res) {
     try {
         const {updatedValues} = req.body
@@ -20,6 +21,7 @@ export async function setCronTimeHandler(req, res) {
     }
 }
 
+// Function to fetch cron time
 export async function fetchCronTimeHandler(req, res) {
     try {
         const data = await Cron.find()

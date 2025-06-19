@@ -1,5 +1,6 @@
 import Contest from "../models/Contest.js";
 
+// Function to get all contests for a specific student
 export async function getAllContests(req, res) {
     try {
         // Fetch all contest history

@@ -14,6 +14,7 @@ dotenv.config()
 
 const PORT = process.env.PORT || 4000
 
+//calling database connection
 database.connect()
 //calling the cron scheduler
 require('./config/cron')
@@ -39,6 +40,7 @@ app.get("/", (req,res) => {
     })
 })
 
+//starting the server
 app.listen(PORT, () => {
     console.log(`App is running at ${PORT}`)
 })

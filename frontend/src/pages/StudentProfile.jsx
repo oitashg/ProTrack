@@ -11,6 +11,7 @@ import ThemeToggle from "../components/ThemeToggle.jsx";
 export default function StudentProfile() {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate()
+
   // Contest History State
   const [contestDays, setContestDays] = useState(30);
   const [contests, setContests] = useState([]);
@@ -38,6 +39,7 @@ export default function StudentProfile() {
     fetchProblemData();
   }, [problemDays]);
 
+  // Fetch contest history for the student
   const fetchContestHistory = async () => {
     try {
       setLoading(true);
@@ -61,6 +63,7 @@ export default function StudentProfile() {
     }
   };
 
+  // Fetch problem solving data for the student
   const fetchProblemData = async () => {
     try {
       setLoading(true);
@@ -116,12 +119,13 @@ export default function StudentProfile() {
   };
 
   if (loading) return <p>Loading students profile...</p>;
+
   return (
     <div className="p-4 space-y-8">
 
       {/* Upper part */}
       <div className="flex gap-4 items-center justify-between">
-        {/* Button to table */}
+        {/* Button to go back to student table */}
         <button
           onClick={() => navigate(`/students`)}
           className="cursor-pointer px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-2xl text-lg sm:text-xl transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-600"
@@ -211,6 +215,8 @@ export default function StudentProfile() {
           ))}
           
         </div>
+
+        {/* Statistical Data */}
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div>
             <strong className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">Most Difficult Solved:</strong>{" "}
@@ -240,6 +246,8 @@ export default function StudentProfile() {
             </span>
           </div>
         </div>
+
+        {/* Bar Graph */}
         <Bar
           data={{
             labels: ratingBuckets.labels,
@@ -247,6 +255,7 @@ export default function StudentProfile() {
           }}
         />
 
+        {/* Submission heatmap */}
         <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-lg max-w-full overflow-auto">
           <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-3">
             Submission Heatmap

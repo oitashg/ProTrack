@@ -14,6 +14,8 @@ const {
 //The data that is passed to the API functions from the frontend is
 //actually again send to the backend inside apiConnector function
 //and then in the backend , those datas are extracted from req.body
+
+//Function to add a new student via API
 export const addStudent = async (data) => {
   let result = null;
   const toastId = toast.loading("Loading...");
@@ -37,6 +39,7 @@ export const addStudent = async (data) => {
   return result;
 };
 
+//Function to edit an existing student via API
 export const editStudent = async (data) => {
   let result = null;
   const toastId = toast.loading("Loading...");
@@ -60,6 +63,7 @@ export const editStudent = async (data) => {
   return result;
 };
 
+//Function to delete a student via API
 export const deleteStudent = async (studentId) => {
   let result = null;
   const toastId = toast.loading("Loading...");
@@ -86,6 +90,7 @@ export const deleteStudent = async (studentId) => {
   return result;
 };
 
+//Function to fetch all students from the API
 export const fetchAllStudents = async () => {
   let result = [];
   const toastId = toast.loading("Loading...");
@@ -111,6 +116,7 @@ export const fetchAllStudents = async () => {
   return result;
 };
 
+//Function to toggle email setting for a student via API
 export const toggleEmailSetting = async (id, isOff) => {
   let result = null;
   const toastId = toast.loading("Loading...");

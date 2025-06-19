@@ -17,6 +17,7 @@ export default function StudentTable({onChange}) {
   const segments = ['Second', 'Minute', 'Hour', 'Day of Month', 'Month', 'Day of Week'];
   const [values, setValues] = useState(Array(6).fill(''));
   
+  // Initialize values with default cron expression
   const handleChange = (index, val) => {
     const newValues = [...values];
     newValues[index] = val;
@@ -27,6 +28,7 @@ export default function StudentTable({onChange}) {
   const updatedValues = values.join(' ')
   console.log("Timer values : ", updatedValues);
 
+  // Fetch students data from the database
   const fetchStudentsData = async () => {
     try{
       setLoading(true);
@@ -42,6 +44,7 @@ export default function StudentTable({onChange}) {
     }
   }
 
+  // Fetch cron time from the database
   const fetchCronTime = async () => {
     try{
       setLoading(true);
@@ -55,6 +58,7 @@ export default function StudentTable({onChange}) {
       console.log("Could not fetch cron time")
     }
   }
+
   useEffect(() => {
     //it was being called twice due to strict mode in react
     fetchStudentsData(),
@@ -89,6 +93,7 @@ export default function StudentTable({onChange}) {
     document.body.removeChild(link);
   };
 
+  //Convert cron expression to human-readable format
   const describeCron = (cronExpr) => {
     const [sec, min, hr, dom, mon, dow] = cronExpr.split(' ');
     const time = `${String(hr).padStart(2,'0')}:${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
@@ -203,9 +208,10 @@ export default function StudentTable({onChange}) {
                     }
                     className="form-checkbox"
                   />
-                  {/* <span className="ml-2">{s.emailDisabled ? 'Off' : 'On'}</span> */}
                 </label>
               </td>
+
+              {/* Actions */}
               <td className="flex flex-col gap-2 px-4 py-2 border space-x-1">
                 <button
                   onClick={() => {
@@ -232,6 +238,7 @@ export default function StudentTable({onChange}) {
                   Profile
                 </button>
               </td>
+              
             </tr>
           ))}
           {students.length === 0 && (

@@ -4,6 +4,7 @@ import { contestEndpoints } from "../apis";
 
 const { FETCH_ALL_CONTESTS_API } = contestEndpoints;
 
+// Function to fetch all contests from the API
 export const fetchAllContests = async () => {
   let result = [];
   const toastId = toast.loading("Loading...");

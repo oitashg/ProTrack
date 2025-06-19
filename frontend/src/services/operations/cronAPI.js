@@ -4,6 +4,7 @@ import { cronEndpoints } from "../apis";
 
 const { SET_CRON_TIME_API, GET_CRON_TIME_API } = cronEndpoints;
 
+// Function to set cron time via API
 export const setCronTimeAPI = async (data) => {
   let result = null;
   const toastId = toast.loading("Loading...");
@@ -29,6 +30,7 @@ export const setCronTimeAPI = async (data) => {
   return result;
 };
 
+// Function to get cron time via API
 export const getCronTimeAPI = async () => {
   let result = [];
   const toastId = toast.loading("Loading...");

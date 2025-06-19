@@ -7,6 +7,7 @@ async function getCronTime() {
   const syncTime = cfg[0].cronTime
   console.log("Sync time set to:", syncTime);
 
+  // Schedule the sync task using the retrieved cron time
   cron.schedule(
   syncTime, 
     () =>{
