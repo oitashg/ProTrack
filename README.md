@@ -135,6 +135,10 @@ student-progress-management-system/
 by the help of cronJob 
 * **Real-time sync**: When a student’s Codeforces handle is updated via the UI, data is fetched immediately regardless of cron.
 
+# Codeforces API
+
+* You can get all the information about Codeforces data like data of user, contest or problems along with Methods and Return Objects from [Codeforces API](https://codeforces.com/apiHelp)
+
 ## 🧹 Usage
 
 1. Navigate to **Students** to add or manage records.
@@ -145,4 +149,4 @@ by the help of cronJob
 
 ## Video Walkthrough
 
-Watch the video here -> https://drive.google.com/file/d/1iat8xsXmESEwrZj8O8_DUOqNc8vSjfZ5/view?usp=sharing`
+Watch the video here -> [ProTrack](https://drive.google.com/file/d/1iat8xsXmESEwrZj8O8_DUOqNc8vSjfZ5/view?usp=sharing`)
