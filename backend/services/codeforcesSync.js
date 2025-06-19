@@ -22,7 +22,7 @@ export async function syncStudent(studentId) {
     `https://codeforces.com/api/user.rating?handle=${cfHandle}`
   );
   const problemHistory = await axios.get(
-    `https://codeforces.com/api/user.status?handle=${cfHandle}&from1&count=1`
+    `https://codeforces.com/api/user.status?handle=${cfHandle}`
   );
 
   //store the API datas
@@ -53,20 +53,34 @@ export async function syncStudent(studentId) {
   );
 
   //Add new problems and update problem schema
+  const accepted = problems.filter(s => s.verdict === "OK")
+
   const upsertedProblems = await Promise.all(
-    problems.map((s) => {
+    accepted.map((s) => {
       return Problem.findOneAndUpdate(
-        { student: student._id },
+        // 1) Filter on both student and problem name
+        { student: student._id, name: s.problem.name },
+
+        // 2) Use $set and $setOnInsert so you only insert once and update fields
         {
-          student: student._id,
-          name: s.problem.name,
-          rating: s.problem.rating || 0,
-          date: new Date(s.creationTimeSeconds * 1000).toISOString(), // Convert seconds to milliseconds
+          $set: {
+            // these fields will always be updated to the latest values
+            rating: s.problem.rating || 0,
+            date:   new Date(s.creationTimeSeconds * 1000)
+          },
+          $setOnInsert: { 
+            // these fields only get set when the doc is first created
+            student: student._id,
+            name:    s.problem.name  
+          }
         },
+
+        // 3) Upsert + return the new doc
         { upsert: true, new: true, setDefaultsOnInsert: true }
       );
     })
   );
+
 
   // Get the created contest and problem IDs
   const contestDataId = upsertedContests.map((c) => c._id);
@@ -107,6 +121,7 @@ export async function syncStudent(studentId) {
   if (!student.emailDisabled) {
     // Count submissions in the past 7 days
     // const timeGap = new Date(Date.now() - student.lastProblemSubmitted);
+    //For test purpose, hardcoding the time gap to 9 days
     const timeGap = 9 * 24 * 60 * 60 * 1000
 
     if (timeGap > 7 * 24 * 60 * 60 * 1000) {
