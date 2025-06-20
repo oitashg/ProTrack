@@ -265,6 +265,7 @@ export async function editStudent(req, res) {
                     handle: user.handle,
                     rating: user.rating || 0,
                     maxRating: user.maxRating || 0,
+                    remindersSent: 0,
                 },
                 $push: {
                     contests: {
