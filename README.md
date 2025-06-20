@@ -135,7 +135,24 @@ student-progress-management-system/
 by the help of cronJob 
 * **Real-time sync**: When a student’s Codeforces handle is updated via the UI, data is fetched immediately regardless of cron.
 
-# Codeforces API
+## Cron Patterns 
+
+   field          allowed values
+   -----          --------------
+   second         0-59
+   minute         0-59
+   hour           0-23
+   day of month   1-31
+   month          1-12 (or names, see below)
+   day of week    0-7 (0 or 7 is Sunday, or use names)
+
+   `*` Asterisks: Any value
+   `1-3,5` Ranges: Ranges and individual values
+   `*/2` Steps: Every two units
+
+   Example: '0 0 2 * * *' means at 2:00 AM every day
+   
+## Codeforces API
 
 * You can get all the information about Codeforces data like data of user, contest or problems along with Methods and Return Objects from [Codeforces API](https://codeforces.com/apiHelp)
 
