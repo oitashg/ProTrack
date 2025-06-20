@@ -137,21 +137,35 @@ by the help of cronJob
 
 ## Cron Patterns 
 
-   field          allowed values
-   -----          --------------
-   second         0-59
-   minute         0-59
-   hour           0-23
-   day of month   1-31
-   month          1-12 (or names, see below)
-   day of week    0-7 (0 or 7 is Sunday, or use names)
+### Cron Expression Reference
 
-   `*` Asterisks: Any value
-   `1-3,5` Ranges: Ranges and individual values
-   `*/2` Steps: Every two units
+A standard cron expression consists of the following fields:
 
-   Example: '0 0 2 * * *' means at 2:00 AM every day
-   
+| Field           | Allowed Values                                              |
+|----------------|-------------------------------------------------------------|
+| **Second**      | `0-59`                                                      |
+| **Minute**      | `0-59`                                                      |
+| **Hour**        | `0-23`                                                      |
+| **Day of Month**| `1-31`                                                      |
+| **Month**       | `1-12` or names (`JAN` to `DEC`)                            |
+| **Day of Week** | `0-7` (`0` or `7` is Sunday) or names (`SUN` to `SAT`)      |
+
+> **Note:** Named values are case-insensitive.
+
+### Special Symbols
+
+| Symbol     | Description                              | Example     |
+|------------|------------------------------------------|-------------|
+| `*`        | Asterisk: Represents **any value**       | `* * * * *` – every minute |
+| `1-3,5`    | Ranges: Specifies a **range or list**     | `1-3,5` – 1, 2, 3, and 5   |
+| `*/2`      | Steps: Repeats at **regular intervals**   | `*/2` – every 2 units      |
+
+### Example
+
+```cron
+Cron Expression: 0 */10 9-17 * * MON-FRI
+Human-Readable form: Runs every 10 minutes between 9:00 AM and 5:59 PM, Monday through Friday, at 0 seconds past the minute.
+
 ## Codeforces API
 
 * You can get all the information about Codeforces data like data of user, contest or problems along with Methods and Return Objects from [Codeforces API](https://codeforces.com/apiHelp)
