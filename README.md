@@ -162,8 +162,8 @@ A standard cron expression consists of the following fields:
 
 ### Example
 
-Cron Expression: 0 */10 9-17 * * MON-FRI
-Human-Readable form: Runs every 10 minutes between 9:00 AM and 5:59 PM, Monday through Friday, at 0 seconds past the minute.
+* **Cron Expression**: 0 */10 9-17 * * MON-FRI
+* **Human-Readable form**: Runs every 10 minutes between 9:00 AM and 5:59 PM, Monday through Friday, at 0 seconds past the minute.
 
 ## Codeforces API
 
