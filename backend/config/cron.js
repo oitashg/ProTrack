@@ -36,5 +36,4 @@ async function getCronTime() {
   ); 
 }
 
-//call the cron scheduler
-getCronTime()
+module.exports = getCronTime;

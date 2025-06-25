@@ -1,14 +1,17 @@
+import getCronTime from "../config/cron.js";
 import Cron from "../models/Cron.js";
 
 // Function to set cron time
 export async function setCronTimeHandler(req, res) {
     try {
-        const {updatedValues} = req.body
-
+        const {cronTimeData} = req.body
+        
         const data = await Cron.findOneAndUpdate(
         {},
-        {cronTime: updatedValues},
+        {cronTime: cronTimeData},  
         {new: true})
+        
+        getCronTime()
 
         res.status(200).json({
             message: 'Cron time set successfully', 

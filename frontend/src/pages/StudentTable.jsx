@@ -4,45 +4,18 @@ import { deleteStudent, fetchAllStudents, toggleEmailSetting } from '../services
 import { useNavigate } from 'react-router-dom';
 import { getCronTimeAPI, setCronTimeAPI } from '../services/operations/cronAPI.js';
 import ThemeToggle from '../components/ThemeToggle.jsx';
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
-export default function StudentTable({onChange}) {
+export default function StudentTable() {
   const [students, setStudents] = useState([]);
   const [syncTime, setSyncTime] = useState('');
+  const [startDate, setStartDate] = useState(new Date());
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [isAdd, setIsAdd] = useState(false); // Track if modal is for adding or editing
   const [id, setId] = useState('');
   const navigate = useNavigate()
-
-  const segments = ['Second', 'Minute', 'Hour', 'Day of Month', 'Month', 'Day of Week'];
-  const [values, setValues] = useState(Array(6).fill(''));
-  
-  // Initialize values with default cron expression
-  const handleChange = (index, val) => {
-    const newValues = [...values];
-    newValues[index] = val;
-    setValues(newValues);
-    if (onChange) onChange(newValues.join(' '));
-  };
-
-  const updatedValues = values.join(' ')
-  console.log("Timer values : ", updatedValues);
-
-  // Fetch students data from the database
-  const fetchStudentsData = async () => {
-    try{
-      setLoading(true);
-      //store data of all students from the database
-      const studentData = await fetchAllStudents()
-      console.log("studentData : ", studentData);
-
-      setStudents(studentData);
-      setLoading(false);
-    }
-    catch(error){
-      console.log("Could not fetch students data")
-    }
-  }
 
   // Fetch cron time from the database
   const fetchCronTime = async () => {
@@ -58,7 +31,67 @@ export default function StudentTable({onChange}) {
       console.log("Could not fetch cron time")
     }
   }
+  
+  //convert sync date and time form database to required date object format 
+  const parseCronDate = (str, year = new Date().getFullYear()) => {
+    // Split into [sec, min, hour, day, monStr, weekdayStr]
+    const [sec, min, hour, day, monStr /*, weekday*/] = str.split(' ');
 
+    // Map month name to index (0 = Jan, 1 = Feb, …)
+    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const monthIndex = monthNames.indexOf(monStr);
+    if (monthIndex < 0) {
+      throw new Error(`Unrecognized month "${monStr}"`);
+    }
+
+    // Build the Date (year, monthIndex, day, hour, min, sec)
+    const date = new Date(year, monthIndex, Number(day), Number(hour), Number(min), Number(sec));
+
+    if (isNaN(date)) {
+      throw new Error(`Invalid date constructed from "${str}"`);
+    }
+    return date;
+  }
+
+  console.log("Sync time from database : ", syncTime);
+
+  useEffect(() => {
+    if (!syncTime) return;              
+    try {
+      const parsed = parseCronDate(syncTime);
+      setStartDate(parsed);
+    } 
+    catch (err) {
+      console.error('Failed to parse cron date:', err);
+    }
+  }, [syncTime]);
+
+  console.log("Start date : ", startDate);
+  const startDateString = startDate.toString();
+
+  const [weekday, month, day, year, time] = startDateString.split(' ')
+  const [hour, minute, second] = time.split(':')
+
+  const cronTimeData = `${second} ${minute} ${hour} ${day} ${month} ${weekday}`;
+  console.log("Cron time data : ", cronTimeData);
+
+  // Fetch students data from the database
+  const fetchStudentsData = async () => {
+    try{
+      setLoading(true);
+      //store data of all students from the database
+      const studentData = await fetchAllStudents()
+
+      setStudents(studentData);
+      setLoading(false);
+    }
+    catch(error){
+      console.log("Could not fetch students data")
+    }
+  }
+
+  console.log("Students data : ", students);
+  
   useEffect(() => {
     //it was being called twice due to strict mode in react
     fetchStudentsData(),
@@ -136,22 +169,14 @@ export default function StudentTable({onChange}) {
 
           {/* Cron time input */}
           <div className='flex flex-col gap-3'>
-            <div className="flex space-x-2">
-              {segments.map((label, idx) => (
-                <input
-                  key={label}
-                  type="text"
-                  placeholder={label}
-                  value={values[idx]}
-                  onChange={(e) => handleChange(idx, e.target.value)}
-                  className="w-12 sm:w-16 md:w-20 p-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-200 placeholder-gray-400 dark:placeholder-gray-500 rounded-lg text-center focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600 transition-colors duration-200"
-                />
-              ))}
+            
+            <div>
+              <DatePicker selected={startDate} showTimeSelect dateFormat="Pp" onChange={(date) => setStartDate(date)}/>
             </div>
 
             <button
               onClick={async () => {
-                await setCronTimeAPI({updatedValues})
+                await setCronTimeAPI({cronTimeData})
                 fetchCronTime()}
               }
               className="cursor-pointer px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-2xl text-lg sm:text-xl transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-600"
@@ -160,7 +185,7 @@ export default function StudentTable({onChange}) {
             </button>
 
             <p className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">
-              Sync time ---  <span className="font-mono text-gray-900 dark:text-gray-100">{describeCron(syncTime)}</span>
+              Sync time ---  <span className="font-mono text-gray-900 dark:text-gray-100">{startDateString}</span>
             </p>
 
           </div>
@@ -188,8 +213,8 @@ export default function StudentTable({onChange}) {
         <tbody>
           {students.map((s) => (
             <tr key={s._id} className="text-center hover:bg-gray-50">
-              <td className="px-4 py-2 border">{s.firstName}</td>
-              <td className="px-4 py-2 border">{s.lastName}</td>
+              <td className="px-4 py-2 border">{s?.firstName}</td>
+              <td className="px-4 py-2 border">{s?.lastName}</td>
               <td className="px-4 py-2 border">{s.email}</td>
               <td className="px-4 py-2 border">{s.phone}</td>
               <td className="px-4 py-2 border">{s.handle}</td>

@@ -8,16 +8,18 @@ const problemRoutes = require('./routes/Problem')
 const cronRoutes = require('./routes/Cron')
 
 const database = require('./config//database')
+const getCronTime = require('./config/cron');
 
-const dotenv = require('dotenv')
+const dotenv = require('dotenv');
 dotenv.config()
 
 const PORT = process.env.PORT || 4000
 
 //calling database connection
 database.connect()
+
 //calling the cron scheduler
-require('./config/cron')
+getCronTime()
 
 app.use(express.json())
 app.use(
