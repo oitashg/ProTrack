@@ -13,10 +13,8 @@ const contestSchema = new mongoose.Schema(
             default: Date.now,
         },
         contestId: {
-            type: String,
+            type: Number,
             required: true,
-            unique: true,
-            trim: true,
         },
         contestName:{
             type: String,

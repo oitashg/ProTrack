@@ -5,12 +5,19 @@ import CalendarHeatmap from "react-calendar-heatmap";
 import "react-calendar-heatmap/dist/styles.css";
 import { fetchAllContests } from "../services/operations/contestAPI.js";
 import { fetchAllProblems } from "../services/operations/problemAPI.js";
-import { useNavigate } from "react-router-dom";
+import { fetchAllStudents } from "../services/operations/studentAPI.js";
+import { useNavigate, useParams } from "react-router-dom";
 import ThemeToggle from "../components/ThemeToggle.jsx";
 
 export default function StudentProfile() {
+  const {id} = useParams()
+  console.log("Student ID:", id);
+
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate()
+
+  // Student Profile State
+  const [students, setStudents] = useState([]);
 
   // Contest History State
   const [contestDays, setContestDays] = useState(30);
@@ -35,9 +42,14 @@ export default function StudentProfile() {
   useEffect(() => {
     fetchContestHistory();
   }, [contestDays]);
+
   useEffect(() => {
     fetchProblemData();
   }, [problemDays]);
+
+  useEffect(() => {
+    fetchStudentData()
+  }, [])
 
   // Fetch contest history for the student
   const fetchContestHistory = async () => {
@@ -47,10 +59,16 @@ export default function StudentProfile() {
       // Fetch contests for the student
       const data = await fetchAllContests();
       console.log("Fetched contests:", data);
-      setContests(data);
-      const sorted = [...data].sort(
+
+      const requiredData = data.filter((c) => c.student._id === id);
+      console.log("Fetched particular contests data:", requiredData);
+
+      setContests(requiredData);
+
+      const sorted = [...requiredData].sort(
         (a, b) => new Date(a.date) - new Date(b.date)
       );
+
       setRatingSeries({
         labels: sorted.map((c) => new Date(c.date).toLocaleDateString()),
         data: sorted.map((c) => c.newRating),
@@ -59,7 +77,7 @@ export default function StudentProfile() {
       setLoading(false);
     } 
     catch (error) {
-      console.log("Could not fetch contest history");
+      console.log("Could not fetch contest history", error);
     }
   };
 
@@ -71,13 +89,17 @@ export default function StudentProfile() {
       // Fetch submissions for the student
       const data = await fetchAllProblems();
       console.log("Fetched submissions:", data);
-      setSubmissions(data);
+
+      const requiredData = data.filter((p) => p.student._id === id);
+      console.log("Fetched particular submissions data:", requiredData);
+
+      setSubmissions(requiredData);
 
       // Stats
-      if (data.length) {
-        const total = data.length;
-        const sumRating = data.reduce((sum, s) => sum + s.rating, 0);
-        const hardest = data.reduce(
+      if (requiredData.length) {
+        const total = requiredData.length;
+        const sumRating = requiredData.reduce((sum, s) => sum + s.rating, 0);
+        const hardest = requiredData.reduce(
           (max, s) => (s.rating > max.rating ? s : max),
           data[0]
         );
@@ -87,19 +109,21 @@ export default function StudentProfile() {
 
         // Rating buckets
         const buckets = {};
-        data.forEach((s) => {
+        requiredData.forEach((s) => {
           const bucket = `${Math.floor(s.rating / 100) * 100}`;
           buckets[bucket] = (buckets[bucket] || 0) + 1;
         });
+
         const labels = Object.keys(buckets).sort((a, b) => +a - +b);
         setRatingBuckets({ labels, counts: labels.map((l) => buckets[l]) });
 
         // Heatmap data: count per date
         const dateCounts = {};
-        data.forEach((s) => {
+        requiredData.forEach((s) => {
           const d = new Date(s.date).toISOString().split("T")[0];
           dateCounts[d] = (dateCounts[d] || 0) + 1;
         });
+
         const heatmapArray = Object.entries(dateCounts).map(
           ([date, count]) => ({ date, count })
         );
@@ -114,9 +138,30 @@ export default function StudentProfile() {
       setLoading(false);
     } 
     catch (error) {
-      console.log("Could not fetch problem data");
+      console.log("Could not fetch problem data", error);
     }
   };
+
+  //Fetch student profile data
+  const fetchStudentData = async () => {
+    try{
+      setLoading(true);
+
+      //Fetch student data from backend
+      const data = await fetchAllStudents()
+      console.log("Fetched all students data:", data);
+
+      const requiredData = data.filter((s) => s._id === id);
+      console.log("Fetched particular student data:", requiredData);
+
+      setStudents(requiredData[0]);
+
+      setLoading(false);
+    }
+    catch(error){
+      console.log("Could not fetch student data", error);
+    }
+  }
 
   if (loading) return <p>Loading students profile...</p>;
 
@@ -152,6 +197,8 @@ export default function StudentProfile() {
             </button>
           ))}
         </div>
+        
+        {/* Line Graph */}
         <Line
           data={{
             labels: ratingSeries.labels,
@@ -221,19 +268,16 @@ export default function StudentProfile() {
           <div>
             <strong className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">Most Difficult Solved:</strong>{" "}
             <span className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
-              {stats.hardest
-                ? `${stats.hardest.rating} (${stats.hardest.name})`
-                : "—"
-              }
+              {`${students.mostDifficultProblem?.name} (${students.mostDifficultProblem?.rating})`}
             </span>
           </div>
           <div>
             <strong className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">Total Solved:</strong>
             <span className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
-              {stats.total}
+              {students?.problems?.length}
             </span>
           </div>
-          <div>
+          {/* <div>
             <strong className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">Avg. Rating:</strong>
             <span className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
               {stats.avgRating}
@@ -244,7 +288,7 @@ export default function StudentProfile() {
             <span className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
               {stats.avgPerDay}
             </span>
-          </div>
+          </div> */}
         </div>
 
         {/* Bar Graph */}

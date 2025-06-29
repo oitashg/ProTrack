@@ -4,13 +4,15 @@ import { deleteStudent, fetchAllStudents, toggleEmailSetting } from '../services
 import { useNavigate } from 'react-router-dom';
 import { getCronTimeAPI, setCronTimeAPI } from '../services/operations/cronAPI.js';
 import ThemeToggle from '../components/ThemeToggle.jsx';
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
+import TimePicker from 'react-time-picker';
+import 'react-time-picker/dist/TimePicker.css';
+import 'react-clock/dist/Clock.css';
 
 export default function StudentTable() {
   const [students, setStudents] = useState([]);
   const [syncTime, setSyncTime] = useState('');
-  const [startDate, setStartDate] = useState(new Date());
+  const[showTime, setShowTime] = useState('')
+  const [startTime, setStartTime] = useState('02:00')
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [isAdd, setIsAdd] = useState(false); // Track if modal is for adding or editing
@@ -28,29 +30,16 @@ export default function StudentTable() {
       setLoading(false);
     }
     catch(error){
-      console.log("Could not fetch cron time")
+      console.log("Could not fetch cron time", error)
     }
   }
   
   //convert sync date and time form database to required date object format 
-  const parseCronDate = (str, year = new Date().getFullYear()) => {
-    // Split into [sec, min, hour, day, monStr, weekdayStr]
-    const [sec, min, hour, day, monStr /*, weekday*/] = str.split(' ');
+  const parseCronDate = (str) => {
+    const [sec, min, hr, day, month, weekday] = str.split(' ');
 
-    // Map month name to index (0 = Jan, 1 = Feb, …)
-    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const monthIndex = monthNames.indexOf(monStr);
-    if (monthIndex < 0) {
-      throw new Error(`Unrecognized month "${monStr}"`);
-    }
-
-    // Build the Date (year, monthIndex, day, hour, min, sec)
-    const date = new Date(year, monthIndex, Number(day), Number(hour), Number(min), Number(sec));
-
-    if (isNaN(date)) {
-      throw new Error(`Invalid date constructed from "${str}"`);
-    }
-    return date;
+    const newTime = `${hr}:${min}`
+    return newTime
   }
 
   console.log("Sync time from database : ", syncTime);
@@ -59,22 +48,20 @@ export default function StudentTable() {
     if (!syncTime) return;              
     try {
       const parsed = parseCronDate(syncTime);
-      setStartDate(parsed);
+      setShowTime(parsed);
     } 
     catch (err) {
       console.error('Failed to parse cron date:', err);
     }
   }, [syncTime]);
 
-  console.log("Start date : ", startDate);
-  const startDateString = startDate.toString();
+  //Converting startTime to cron format
+  console.log("start time -> ", startTime)
+  const [hr, min] = startTime.split(':');
 
-  const [weekday, month, day, year, time] = startDateString.split(' ')
-  const [hour, minute, second] = time.split(':')
-
-  const cronTimeData = `${second} ${minute} ${hour} ${day} ${month} ${weekday}`;
+  const cronTimeData = `00 ${min} ${hr} * * *`;
   console.log("Cron time data : ", cronTimeData);
-
+  
   // Fetch students data from the database
   const fetchStudentsData = async () => {
     try{
@@ -86,9 +73,10 @@ export default function StudentTable() {
       setLoading(false);
     }
     catch(error){
-      console.log("Could not fetch students data")
+      console.log("Could not fetch students data", error)
     }
   }
+
 
   console.log("Students data : ", students);
   
@@ -126,16 +114,6 @@ export default function StudentTable() {
     document.body.removeChild(link);
   };
 
-  //Convert cron expression to human-readable format
-  const describeCron = (cronExpr) => {
-    const [sec, min, hr, dom, mon, dow] = cronExpr.split(' ');
-    const time = `${String(hr).padStart(2,'0')}:${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
-    const byDay   = dom === '*' ? 'every day' : `on day ${dom}`;
-    const byMonth = mon === '*' ? 'every month' : `in month ${mon}`;
-    const byWeek  = dow === '*' ? '' : `on day of week ${dow}`;
-    return `${time} — ${byDay} of ${byMonth}${byWeek ? ', ' + byWeek : ''}`;
-  }
-
   if (loading) return <p>Loading students...</p>;
 
   return (
@@ -169,9 +147,9 @@ export default function StudentTable() {
 
           {/* Cron time input */}
           <div className='flex flex-col gap-3'>
-            
+
             <div>
-              <DatePicker selected={startDate} showTimeSelect dateFormat="Pp" onChange={(date) => setStartDate(date)}/>
+              <TimePicker onChange={setStartTime} value={startTime}/>
             </div>
 
             <button
@@ -185,7 +163,7 @@ export default function StudentTable() {
             </button>
 
             <p className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">
-              Sync time ---  <span className="font-mono text-gray-900 dark:text-gray-100">{startDateString}</span>
+              Sync time ---  <span className="font-mono text-gray-900 dark:text-gray-100">{showTime}</span>
             </p>
 
           </div>

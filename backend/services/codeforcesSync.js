@@ -4,7 +4,7 @@ import Student from "../models/Student.js";
 import Contest from "../models/Contest.js";
 import Problem from "../models/Problem.js";
 
-//sync meachanism to fetch data from codeforces api and update database for each student
+//sync mechanism to fetch data from codeforces api and update database for each student
 export async function syncStudent(studentId) {
   const student = await Student.findById(studentId);
 
@@ -15,76 +15,97 @@ export async function syncStudent(studentId) {
   const cfHandle = student.handle;
 
   //extract data from codeforces api
-  const { data } = await axios.get(
-    `https://codeforces.com/api/user.info?handles=${cfHandle}`
-  );
-  const contestHistory = await axios.get(
-    `https://codeforces.com/api/user.rating?handle=${cfHandle}`
-  );
-  const problemHistory = await axios.get(
-    `https://codeforces.com/api/user.status?handle=${cfHandle}`
-  );
+  const { data } = await axios.get(`https://codeforces.com/api/user.info?handles=${cfHandle}`);
+  const contestHistory = await axios.get(`https://codeforces.com/api/user.rating?handle=${cfHandle}`);
+  const problemHistory = await axios.get(`https://codeforces.com/api/user.status?handle=${cfHandle}`);
+  const problemData = await axios.get('https://codeforces.com/api/problemset.problems')
 
   //store the API datas
   const user = data?.result[0];
   const history = contestHistory?.data?.result;
   const problems = problemHistory?.data?.result;
+  const allProblems = problemData?.data?.result?.problems
+
+  //Store the already existing contestId and problemName for this particular student from database
+  const existingContests = await Contest.find({student: student._id}).select('contestId').lean();
+  const existingProblems = await Problem.find({student: student._id}).select('name').lean();
+
+  console.log("Existing Contests:", existingContests);
+  console.log("Existing Problems:", existingProblems);
+
+  //Extract the new contest and problems data
+  const newContests = history?.filter(c => c.contestId && !existingContests.some(ec => ec.contestId === c.contestId));
+  const newProblems = problems?.filter(p => p.problem && p.verdict === "OK" && !existingProblems.some(ep => ep.name === p.problem.name));
+
+  console.log("New Contests:", newContests);
+  console.log("New Problems:", newProblems);
+
+  //Find latest most difficult problem
+  const maxRating = Math.max(...problems?.map(p => p.problem?.rating));
+  const topRated = problems?.filter(p => p.problem.rating === maxRating && p.verdict === "OK");
+  const latestTime = Math.max(...topRated?.map(p => p.creationTimeSeconds))
+  const hardestProblem = topRated?.find(p => p.creationTimeSeconds === latestTime);
+
+  const participatedContest = newContests?.map(c => c.contestId)
+  console.log("Participated Contests:", participatedContest);
+
+  const solvedProblems = newProblems?.filter(sub => 
+    participatedContest.includes(sub.contestId) &&
+    sub.author.participantType === "CONTESTANT" &&
+    sub.verdict === "OK"
+  )
+  console.log("solved Problems:", solvedProblems);
 
   //Add new contests and update contest schema
   const upsertedContests = await Promise.all(
-    history.map((c) =>
-      
+    newContests?.map(contest => {
+      const eachContestSolvedProblem = solvedProblems.filter(c => c.contestId === contest.contestId);
+      const eachContestGivenProblems = allProblems.filter(p => p.contestId === contest.contestId);
+
       Contest.findOneAndUpdate(
         //filter criteria
-        { student: student._id, contestId: c.contestId },
+        { student: student._id, contestId: contest.contestId },
         {
           student: student._id,
-          date: new Date(c.ratingUpdateTimeSeconds * 1000).toISOString(),
-          contestId: c.contestId,
-          contestName: c.contestName,
-          oldRating: c.oldRating,
-          newRating: c.newRating,
-          rank: c.rank || 0,
-          // unsolvedProblems: eachContestGivenProblems.length - eachContestSolvedProblem.length 
+          date: new Date(contest.ratingUpdateTimeSeconds * 1000).toISOString(),
+          contestId: contest.contestId,
+          contestName: contest.contestName,
+          oldRating: contest.oldRating,
+          newRating: contest.newRating,
+          rank: contest.rank || 0,
+          unsolvedProblems: eachContestGivenProblems.length - eachContestSolvedProblem.length 
         },
         { upsert: true, new: true, setDefaultsOnInsert: true }
       )
-    )
+    })
   );
 
   //Add new problems and update problem schema
-  const accepted = problems.filter(s => s.verdict === "OK")
-
+  const accepted = newProblems.filter(s => s.verdict === "OK")
   const upsertedProblems = await Promise.all(
-    accepted.map((s) => {
+    accepted.map((submission) => {
       return Problem.findOneAndUpdate(
-        // 1) Filter on both student and problem name
-        { student: student._id, name: s.problem.name },
+        //Filter on both student and problem name
+        { student: student._id, name: submission.problem.name },
 
-        // 2) Use $set and $setOnInsert so you only insert once and update fields
         {
-          $set: {
-            // these fields will always be updated to the latest values
-            rating: s.problem.rating || 0,
-            date:   new Date(s.creationTimeSeconds * 1000)
-          },
-          $setOnInsert: { 
-            // these fields only get set when the doc is first created
-            student: student._id,
-            name:    s.problem.name  
-          }
+          student: student._id,
+          name: submission.problem.name,
+          rating: submission.problem.rating || 0,
+          date: new Date(submission.creationTimeSeconds * 1000).toISOString(),
         },
 
-        // 3) Upsert + return the new doc
         { upsert: true, new: true, setDefaultsOnInsert: true }
       );
     })
   );
 
+  console.log("Upserted Contests length:", upsertedContests.length);
+  console.log("Upserted Problems length:", upsertedProblems.length);
 
   // Get the created contest and problem IDs
-  const contestDataId = upsertedContests.map((c) => c._id);
-  const problemsDataId = upsertedProblems.map((p) => p._id);
+  const contestDataId = upsertedContests?.map((c) => c._id);
+  const problemsDataId = upsertedProblems?.map((p) => p._id);
 
   console.log("Contest Data IDs:", contestDataId);
   console.log("Problems Data IDs:", problemsDataId);
@@ -98,6 +119,11 @@ export async function syncStudent(studentId) {
         lastName: user.lastName || student.lastName,
         rating: user.rating || student.rating,
         maxRating: user.maxRating || student.maxRating,
+        lastProblemSubmitted: problems[0].creationTimeSeconds * 1000 || student.lastProblemSubmitted,
+        mostDifficultProblem: {
+          name: hardestProblem?.problem?.name || student.mostDifficultProblem.name,
+          rating: hardestProblem?.problem?.rating || student.mostDifficultProblem.rating,
+        },
         lastSync: new Date(),
       },
       $push: {
@@ -111,27 +137,24 @@ export async function syncStudent(studentId) {
     },
     { new: true }
   )
-    .populate("contests")
-    .populate("problems")
-    .exec();
+  .populate("contests")
+  .populate("problems")
+  .exec();
 
-  console.log("Student synced successfully:", updatedStudent);
+  // console.log("Student synced successfully:", updatedStudent);
 
-  // 2) Inactivity detection
+  //Inactivity detection
   if (!student.emailDisabled) {
     // Count submissions in the past 7 days
-    // const timeGap = new Date(Date.now() - student.lastProblemSubmitted);
-    //For test purpose, hardcoding the time gap to 9 days
-    const timeGap = 9 * 24 * 60 * 60 * 1000
+    const timeGap = Date.now() - new Date(updatedStudent?.lastProblemSubmitted).getTime();
 
-    if (timeGap > 7 * 24 * 60 * 60 * 1000) {
+    if (timeGap > 604800000) {
       // Send reminder
       await sendReminderEmail(student);
       student.remindersSent += 1;
     }
   }
 
-  // 3) Persist changes
   await student.save();
 }
 
@@ -152,7 +175,8 @@ export async function syncAllStudents() {
     try {
       await syncStudent(s._id);
       console.log(`Synced ${s.handle} successfully.`);
-    } catch (err) {
+    } 
+    catch (err) {
       console.error(`Error syncing ${s.handle}:`, err);
     }
   }
@@ -178,7 +202,8 @@ export const sendReminderEmail = async (student) => {
 
     console.log(info);
     return info;
-  } catch (error) {
+  } 
+  catch (error) {
     console.log(error.message);
   }
 };

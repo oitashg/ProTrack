@@ -5,9 +5,7 @@ import axios from "axios";
 
 //Controller to add students in the table
 export async function addStudent(req, res) {
-    try 
-    {
-        console.log('Request body:', req.body);
+    try {
         //should be added in form
         const { cfHandle } = req.body;
         const {email, phone} = req.body
@@ -25,6 +23,12 @@ export async function addStudent(req, res) {
         const problems = problemHistory?.data?.result
         const allProblems = problemData?.data?.result?.problems
 
+        //Find latest most difficult problem
+        const maxRating = Math.max(...problems?.map(p => p.problem?.rating));
+        const topRated = problems?.filter(p => p.problem.rating === maxRating && p.verdict === "OK");
+        const latestTime = Math.max(...topRated?.map(p => p.creationTimeSeconds))
+        const hardestProblem = topRated?.find(p => p.creationTimeSeconds === latestTime);
+        
         const participatedContest = history.map(c => c.contestId)
         console.log("Participated Contests:", participatedContest);
 
@@ -33,12 +37,7 @@ export async function addStudent(req, res) {
             sub.author.participantType === "CONTESTANT" &&
             sub.verdict === "OK"
         )
-        console.log("solved Problems:", solvedProblems);
-
-        const requiredProblems = allProblems.filter(p => 
-            participatedContest.includes(p.contestId)
-        )
-        console.log("Required Problems:", requiredProblems);
+        // console.log("solved Problems:", solvedProblems);
 
         // Validate user data
         if (!user) {
@@ -64,24 +63,26 @@ export async function addStudent(req, res) {
         // Save to student database 
         const student = await Student.create(newStudent);
 
+        // console.log('Contest history:', history);
+
         //create student contest history profile
         if (history.length > 0) {
             await Promise.all(
                 history.map(contest => {
-                const eachContestSolvedProblem = solvedProblems.filter(c => c.contestId === contest.contestId);
-                const eachContestGivenProblems = requiredProblems.filter(p => p.contestId === contest.contestId);
+                    const eachContestSolvedProblem = solvedProblems.filter(c => c.contestId === contest.contestId);
+                    const eachContestGivenProblems = allProblems.filter(p => p.contestId === contest.contestId);
 
-                const contestData = {
-                    student:     student._id,
-                    date:        new Date(contest.ratingUpdateTimeSeconds * 1000).toISOString(),
-                    contestId:   contest.contestId,
-                    contestName: contest.contestName,
-                    oldRating:   contest.oldRating,
-                    newRating:   contest.newRating,
-                    rank:        contest.rank || 0,
-                    unsolvedProblems: eachContestGivenProblems.length - eachContestSolvedProblem.length 
-                };
-                return Contest.create(contestData);
+                    const contestData = {
+                        student:     student._id,
+                        date:        new Date(contest.ratingUpdateTimeSeconds * 1000).toISOString(),
+                        contestId:   contest.contestId,
+                        contestName: contest.contestName,
+                        oldRating:   contest.oldRating,
+                        newRating:   contest.newRating,
+                        rank:        contest.rank || 0,
+                        unsolvedProblems: eachContestGivenProblems.length - eachContestSolvedProblem.length 
+                    };
+                    return Contest.create(contestData);
                 })
             );
         }
@@ -92,13 +93,13 @@ export async function addStudent(req, res) {
 
             await Promise.all(
                 accepted.map((submission) => {
-                const problemData = {
-                    student: student._id,
-                    name:    submission.problem.name,
-                    rating:  submission.problem.rating || 0,
-                    date: new Date(submission.creationTimeSeconds * 1000).toISOString(),
-                };
-                return Problem.create(problemData);
+                    const problemData = {
+                        student: student._id,
+                        name:    submission.problem.name,
+                        rating:  submission.problem.rating || 0,
+                        date: new Date(submission.creationTimeSeconds * 1000).toISOString(),
+                    };
+                    return Problem.create(problemData);
                 })
             );
         }
@@ -107,8 +108,8 @@ export async function addStudent(req, res) {
         const contestDataId = await Contest.find({ student: student._id }).select('_id');
         const problemsDataId = await Problem.find({ student: student._id }).select('_id');
 
-        console.log('Length of Contest Data IDs:', contestDataId.length);
-        console.log('Length of Problems Data IDs:', problemsDataId.length);
+        // console.log('Length of Contest Data IDs:', contestDataId.length);
+        // console.log('Length of Problems Data IDs:', problemsDataId.length);
         
         //add the contests and problems history to student
         const completeStudentsData = await Student.findByIdAndUpdate(
@@ -121,6 +122,13 @@ export async function addStudent(req, res) {
                     problems: {
                         $each: problemsDataId,
                     }
+                },
+                $set: {
+                    lastProblemSubmitted: problems[0].creationTimeSeconds * 1000,
+                    mostDifficultProblem: {
+                        name: hardestProblem?.problem?.name || "",
+                        rating: hardestProblem?.problem?.rating || 0,
+                    }
                 }
             },
             { new: true })
@@ -128,7 +136,7 @@ export async function addStudent(req, res) {
             .populate("problems")
             .exec()
 
-        console.log('Student complete data added successfully:', completeStudentsData);
+        // console.log('Student complete data added successfully:', completeStudentsData);
         res.status(201).json(completeStudentsData);
     } 
     catch (error) {
@@ -153,14 +161,22 @@ export async function editStudent(req, res) {
         //extract data from codeforces api
         const {data} = await axios.get(`https://codeforces.com/api/user.info?handles=${cfHandle}`)
         const contestHistory = await axios.get(`https://codeforces.com/api/user.rating?handle=${cfHandle}`)
-        const problemHistory = await axios.get(`https://codeforces.com/api/user.status?handle=${cfHandle}&from1&count=1`)
+        const problemHistory = await axios.get(`https://codeforces.com/api/user.status?handle=${cfHandle}`)
         const problemData = await axios.get('https://codeforces.com/api/problemset.problems')
 
         const user = data?.result[0]
-        console.log('User data:', user);
+        // console.log('User data:', user);
+
         const history = contestHistory?.data?.result
         const problems = problemHistory?.data?.result
         const allProblems = problemData?.data?.result?.problems
+
+        //Find latest most difficult problem
+        const maxRating = Math.max(...problems?.map(p => p.problem.rating));
+        const topRated = problems?.filter(p => p.problem.rating === maxRating)
+
+        const latestTime = Math.max(...topRated?.map(p => p.creationTimeSeconds))
+        const hardestProblem = topRated?.find(p => p.creationTimeSeconds === latestTime);
 
         const participatedContest = history.filter(c => c.contestId)
         const solvedProblems = problems.filter(sub => 
@@ -168,12 +184,7 @@ export async function editStudent(req, res) {
             sub.author.participantType === "CONTESTANT" &&
             sub.verdict === "OK"
         )
-        console.log("solved Problems:", solvedProblems);
-
-        const requiredProblems = allProblems.filter(p => 
-            participatedContest.includes(p.contestId)
-        )
-        console.log("Required Problems:", requiredProblems);
+        // console.log("solved Problems:", solvedProblems);
 
         // Validate user data
         if (!user) {
@@ -211,20 +222,20 @@ export async function editStudent(req, res) {
         if (history.length > 0) {
             await Promise.all(
                 history.map(contest => {
-                const eachContestSolvedProblem = solvedProblems.filter(c => c.contestId === contest.contestId);
-                const eachContestGivenProblems = requiredProblems.filter(p => p.contestId === contest.contestId);
+                    const eachContestSolvedProblem = solvedProblems.filter(c => c.contestId === contest.contestId);
+                    const eachContestGivenProblems = allProblems.filter(p => p.contestId === contest.contestId);
 
-                const contestData = {
-                    student:     student._id,
-                    date:        new Date(contest.ratingUpdateTimeSeconds * 1000).toISOString(),
-                    contestId:   contest.contestId,
-                    contestName: contest.contestName,
-                    oldRating:   contest.oldRating,
-                    newRating:   contest.newRating,
-                    rank:        contest.rank || 0,
-                    unsolvedProblems: eachContestGivenProblems.length - eachContestSolvedProblem.length
-                };
-                return Contest.create(contestData);
+                    const contestData = {
+                        student:     student._id,
+                        date:        new Date(contest.ratingUpdateTimeSeconds * 1000).toISOString(),
+                        contestId:   contest.contestId,
+                        contestName: contest.contestName,
+                        oldRating:   contest.oldRating,
+                        newRating:   contest.newRating,
+                        rank:        contest.rank || 0,
+                        unsolvedProblems: eachContestGivenProblems.length - eachContestSolvedProblem.length
+                    };
+                    return Contest.create(contestData);
                 })
             );
         }
@@ -235,13 +246,13 @@ export async function editStudent(req, res) {
 
             await Promise.all(
                 accepted.map((submission) => {
-                const problemData = {
-                    student: student._id,
-                    name:    submission.problem.name,
-                    rating:  submission.problem.rating || 0,
-                    date: new Date(submission.creationTimeSeconds * 1000).toISOString(),
-                };
-                return Problem.create(problemData);
+                    const problemData = {
+                        student: student._id,
+                        name:    submission.problem.name,
+                        rating:  submission.problem.rating || 0,
+                        date: new Date(submission.creationTimeSeconds * 1000).toISOString(),
+                    };
+                    return Problem.create(problemData);
                 })
             );
         }
@@ -250,21 +261,26 @@ export async function editStudent(req, res) {
         const contestDataId = await Contest.find({ student: id }).select('_id');
         const problemsDataId = await Problem.find({ student: id }).select('_id');
 
-        console.log('Contest Data IDs:', contestDataId);
-        console.log('Problems Data IDs:', problemsDataId);
+        // console.log('Contest Data IDs:', contestDataId);
+        // console.log('Problems Data IDs:', problemsDataId);
         
         // Find student by ID and update everything
         const updatedStudent = await Student.findByIdAndUpdate(
             student._id,
             {
                 $set: {
-                    firstName: user.firstName,
-                    lastName: user.lastName,
+                    firstName: user.firstName || " ",
+                    lastName: user.lastName || " ",
                     email,
                     phone,
                     handle: user.handle,
                     rating: user.rating || 0,
                     maxRating: user.maxRating || 0,
+                    lastProblemSubmitted: problems[0].creationTimeSeconds * 1000,
+                    mostDifficultProblem: {
+                        name: hardestProblem?.problem?.name || "",
+                        rating: hardestProblem?.problem?.rating || 0,
+                    },
                     remindersSent: 0,
                 },
                 $push: {
@@ -281,7 +297,7 @@ export async function editStudent(req, res) {
             .populate("problems")  
             .exec()
 
-        console.log('Student added successfully:', updatedStudent);
+        // console.log('Student added successfully:', updatedStudent);
 
         if (!updatedStudent) {
             return res.status(404).json({ message: 'Student not found' });

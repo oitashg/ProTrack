@@ -7,7 +7,7 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={toggle}
-      className="p-2 rounded-full focus:outline-none bg-gray-200 dark:bg-gray-700"
+      className="cursor-pointer p-2 rounded-full focus:outline-none bg-gray-200 dark:bg-gray-700"
     >
       {theme === 'light' ? <Moon size={20} /> : <Sun size={20} />}
     </button>

@@ -4,13 +4,13 @@ const studentSchema = new mongoose.Schema(
     {
         firstName: {
             type: String,
-            // required: true,
             trim: true,
+            default: "Anonymous",
         },
         lastName: {
             type: String,
-            // required: true,
             trim: true,
+            default: "User",
         },
         email: {
             type: String,
@@ -50,20 +50,21 @@ const studentSchema = new mongoose.Schema(
             },
         ],
         mostDifficultProblem: {
-            type: String,
-            // required: true,
-            trim: true
+            name: {
+                type: String,
+                default: "",
+            },
+            rating: {
+                type: Number,
+                default: 0,
+            },
         },
         lastProblemSubmitted: {
             type: Date,
-            // required: true,
+            required: true,
             default: Date.now,
         },
         createdAt: {
-            type: Date,
-            default: Date.now,
-        },
-        updatedAt: {
             type: Date,
             default: Date.now,
         },
