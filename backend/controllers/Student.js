@@ -22,12 +22,6 @@ export async function addStudent(req, res) {
         const history = contestHistory?.data?.result
         const problems = problemHistory?.data?.result
         const allProblems = problemData?.data?.result?.problems
-
-        //Find latest most difficult problem
-        const maxRating = Math.max(...problems?.map(p => p.problem?.rating));
-        const topRated = problems?.filter(p => p.problem.rating === maxRating && p.verdict === "OK");
-        const latestTime = Math.max(...topRated?.map(p => p.creationTimeSeconds))
-        const hardestProblem = topRated?.find(p => p.creationTimeSeconds === latestTime);
         
         const participatedContest = history.map(c => c.contestId)
         console.log("Participated Contests:", participatedContest);
@@ -125,10 +119,6 @@ export async function addStudent(req, res) {
                 },
                 $set: {
                     lastProblemSubmitted: problems[0].creationTimeSeconds * 1000,
-                    mostDifficultProblem: {
-                        name: hardestProblem?.problem?.name || "",
-                        rating: hardestProblem?.problem?.rating || 0,
-                    }
                 }
             },
             { new: true })
@@ -170,13 +160,6 @@ export async function editStudent(req, res) {
         const history = contestHistory?.data?.result
         const problems = problemHistory?.data?.result
         const allProblems = problemData?.data?.result?.problems
-
-        //Find latest most difficult problem
-        const maxRating = Math.max(...problems?.map(p => p.problem.rating));
-        const topRated = problems?.filter(p => p.problem.rating === maxRating)
-
-        const latestTime = Math.max(...topRated?.map(p => p.creationTimeSeconds))
-        const hardestProblem = topRated?.find(p => p.creationTimeSeconds === latestTime);
 
         const participatedContest = history.filter(c => c.contestId)
         const solvedProblems = problems.filter(sub => 
@@ -277,10 +260,6 @@ export async function editStudent(req, res) {
                     rating: user.rating || 0,
                     maxRating: user.maxRating || 0,
                     lastProblemSubmitted: problems[0].creationTimeSeconds * 1000,
-                    mostDifficultProblem: {
-                        name: hardestProblem?.problem?.name || "",
-                        rating: hardestProblem?.problem?.rating || 0,
-                    },
                     remindersSent: 0,
                 },
                 $push: {

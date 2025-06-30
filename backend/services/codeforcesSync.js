@@ -40,21 +40,15 @@ export async function syncStudent(studentId) {
   console.log("New Contests:", newContests);
   console.log("New Problems:", newProblems);
 
-  //Find latest most difficult problem
-  const maxRating = Math.max(...problems?.map(p => p.problem?.rating));
-  const topRated = problems?.filter(p => p.problem.rating === maxRating && p.verdict === "OK");
-  const latestTime = Math.max(...topRated?.map(p => p.creationTimeSeconds))
-  const hardestProblem = topRated?.find(p => p.creationTimeSeconds === latestTime);
-
   const participatedContest = newContests?.map(c => c.contestId)
-  console.log("Participated Contests:", participatedContest);
+  // console.log("Participated Contests:", participatedContest);
 
   const solvedProblems = newProblems?.filter(sub => 
     participatedContest.includes(sub.contestId) &&
     sub.author.participantType === "CONTESTANT" &&
     sub.verdict === "OK"
   )
-  console.log("solved Problems:", solvedProblems);
+  // console.log("solved Problems:", solvedProblems);
 
   //Add new contests and update contest schema
   const upsertedContests = await Promise.all(
@@ -120,10 +114,6 @@ export async function syncStudent(studentId) {
         rating: user.rating || student.rating,
         maxRating: user.maxRating || student.maxRating,
         lastProblemSubmitted: problems[0].creationTimeSeconds * 1000 || student.lastProblemSubmitted,
-        mostDifficultProblem: {
-          name: hardestProblem?.problem?.name || student.mostDifficultProblem.name,
-          rating: hardestProblem?.problem?.rating || student.mostDifficultProblem.rating,
-        },
         lastSync: new Date(),
       },
       $push: {
@@ -163,7 +153,7 @@ export async function syncStudent(studentId) {
 export async function syncAllStudents() {
   //extract data of all students with cfHandle
   const students = await Student.find({ handle: { $exists: true, $ne: "" } });
-  console.log("Students data -> ", students);
+  // console.log("Students data -> ", students);
 
   if (students.length === 0) {
     console.log("No students to sync.");

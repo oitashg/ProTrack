@@ -49,16 +49,6 @@ const studentSchema = new mongoose.Schema(
                 ref: "Problem",
             },
         ],
-        mostDifficultProblem: {
-            name: {
-                type: String,
-                default: "",
-            },
-            rating: {
-                type: Number,
-                default: 0,
-            },
-        },
         lastProblemSubmitted: {
             type: Date,
             required: true,
