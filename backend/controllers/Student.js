@@ -4,7 +4,7 @@ import Student from "../models/Student.js";
 import axios from "axios";
 
 //Controller to add students in the table
-export async function addStudent(req, res) {
+export async function addStudent(req, res) {  
     try {
         //should be added in form
         const { cfHandle } = req.body;
@@ -24,7 +24,7 @@ export async function addStudent(req, res) {
         const allProblems = problemData?.data?.result?.problems
         
         const participatedContest = history.map(c => c.contestId)
-        console.log("Participated Contests:", participatedContest);
+        // console.log("Participated Contests:", participatedContest);
 
         const solvedProblems = problems.filter(sub => 
             participatedContest.includes(sub.contestId) &&
