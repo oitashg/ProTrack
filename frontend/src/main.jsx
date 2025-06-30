@@ -3,7 +3,7 @@ import { BrowserRouter } from 'react-router-dom';
 import './index.css'
 import App from './App.jsx'
 import { Toaster } from 'react-hot-toast';
-import { ThemeProvider } from './contexts/ThemeContext.jsx';
+import { ThemeProvider } from './components/ThemeProvider';
 
 createRoot(document.getElementById('root')).render(
   <ThemeProvider>

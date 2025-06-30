@@ -1,24 +1,28 @@
-import { useNavigate } from 'react-router-dom'
-import ThemeToggle from '../components/ThemeToggle'
+import { useNavigate } from 'react-router-dom';
+import { ModeToggle } from '@/components/ModeToggle';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
 const Home = () => {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   return (
-    <div className='min-h-screen flex flex-col gap-4 items-center justify-center bg-gray-100 dark:bg-gray-900 transition-colors duration-300'>
-      <h1 className="text-xl sm:text-5xl md:text-6xl text-gray-800 dark:text-gray-100 mb-6">
-        ProTrack
-      </h1>
-
-      <button
-        className='cursor-pointer px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-2xl text-lg sm:text-xl transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-600'
-        onClick={() => navigate('/students')}>
-        Go to Table
-      </button>
-
-      <ThemeToggle/>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 transition-colors duration-300 p-4">
+      <Card className="max-w-md w-full">
+        <CardContent className="text-center space-y-6">
+          <h1 className="text-4xl font-extrabold text-gray-800 dark:text-gray-100">
+            ProTrack
+          </h1>
+          <Button size="lg" className="w-full" onClick={() => navigate('/students')}>
+            Go to Table
+          </Button>
+        </CardContent>
+        <CardFooter className="flex justify-center">
+          <ModeToggle />
+        </CardFooter>
+      </Card>
     </div>
-  )
-}
+  );
+};
 
-export default Home
+export default Home;

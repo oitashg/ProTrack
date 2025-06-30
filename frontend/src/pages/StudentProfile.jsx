@@ -1,42 +1,37 @@
-import { useEffect, useState } from "react";
-import { Line, Bar } from "react-chartjs-2";
-import "chart.js/auto";
-import CalendarHeatmap from "react-calendar-heatmap";
-import "react-calendar-heatmap/dist/styles.css";
-import { fetchAllContests } from "../services/operations/contestAPI.js";
-import { fetchAllProblems } from "../services/operations/problemAPI.js";
-import { fetchAllStudents } from "../services/operations/studentAPI.js";
-import { useNavigate, useParams } from "react-router-dom";
-import ThemeToggle from "../components/ThemeToggle.jsx";
+import { useEffect, useState } from 'react';
+import { Line, Bar } from 'react-chartjs-2';
+import 'chart.js/auto';
+import CalendarHeatmap from 'react-calendar-heatmap';
+import 'react-calendar-heatmap/dist/styles.css';
+import { fetchAllContests } from '../services/operations/contestAPI.js';
+import { fetchAllProblems } from '../services/operations/problemAPI.js';
+import { fetchAllStudents } from '../services/operations/studentAPI.js';
+import { useNavigate, useParams } from 'react-router-dom';
+import { ModeToggle } from '@/components/ModeToggle.jsx';
+
+// shadcn/ui components
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger} from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
 
 export default function StudentProfile() {
-  const {id} = useParams()
-  console.log("Student ID:", id);
-
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate()
 
-  // Student Profile State
-  const [students, setStudents] = useState([]);
+  // Profile
+  const [student, setStudent] = useState(null);
 
-  // Contest History State
+  // Contest history
   const [contestDays, setContestDays] = useState(30);
   const [contests, setContests] = useState([]);
   const [ratingSeries, setRatingSeries] = useState({ labels: [], data: [] });
 
-  // Problem Solving Data State
+  // Problem data
   const [problemDays, setProblemDays] = useState(7);
-  const [submissions, setSubmissions] = useState([]);
-  const [stats, setStats] = useState({
-    hardest: null,
-    total: 0,
-    avgRating: 0,
-    avgPerDay: 0,
-  });
-  const [ratingBuckets, setRatingBuckets] = useState({
-    labels: [],
-    counts: [],
-  });
+  const [stats, setStats] = useState({ hardest: null, total: 0, avgRating: 0, avgPerDay: 0 });
+  const [ratingBuckets, setRatingBuckets] = useState({ labels: [], counts: [] });
   const [heatmapData, setHeatmapData] = useState([]);
 
   useEffect(() => {
@@ -51,302 +46,184 @@ export default function StudentProfile() {
     fetchStudentData()
   }, [])
 
-  // Fetch contest history for the student
-  const fetchContestHistory = async (d) => {
+  const fetchStudentData = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
+      const data = await fetchAllStudents();
+      setStudent(data.find((s) => s._id === id));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-      // Fetch contests for the student
-      const data = await fetchAllContests();
-      // console.log("Fetched contests:", data);
-
-      const requiredData = data.filter((c) => c.student._id === id);
-      // console.log("Fetched particular contests data:", requiredData);
-
-      //Fetch contests within the specified days
-      const selectedContests = requiredData.filter(c => {
-        const contestDate = new Date(c.date);
-        const today = new Date();
-        const daysAgo = today - contestDate;
-        return daysAgo <= d*24*60*60*1000;
-      })
-
-      // console.log("Filtered contests within days:", selectedContests);
-      
-      const sorted = [...selectedContests].sort(
-        (a, b) => new Date(a.date) - new Date(b.date)
-      );
-      
+  const fetchContestHistory = async (days) => {
+    setLoading(true);
+    try {
+      const all = await fetchAllContests();
+      const mine = all.filter((c) => c.student._id === id);
+      const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+      const recent = mine.filter((c) => new Date(c.date).getTime() >= cutoff);
+      const sorted = recent.sort((a, b) => new Date(a.date) - new Date(b.date));
       setContests(sorted);
-
       setRatingSeries({
         labels: sorted.map((c) => new Date(c.date).toLocaleDateString()),
         data: sorted.map((c) => c.newRating),
       });
-
+    } catch (err) {
+      console.error(err);
+    } finally {
       setLoading(false);
-    } 
-    catch (error) {
-      console.log("Could not fetch contest history", error);
     }
   };
 
-  // console.log("Rating Series:", ratingSeries);
-
-  // Fetch problem solving data for the student
-  const fetchProblemData = async (d) => {
+  const fetchProblemData = async (days) => {
+    setLoading(true);
     try {
-      setLoading(true);
+      const all = await fetchAllProblems();
+      const mine = all.filter((p) => p.student._id === id);
+      const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
+      const recent = mine.filter((p) => new Date(p.date).getTime() >= cutoff);
 
-      // Fetch submissions for the student
-      const data = await fetchAllProblems();
-      console.log("Fetched submissions:", data);
+      // stats
+      const total = recent.length;
+      const sumRating = recent.reduce((sum, s) => sum + s.rating, 0);
+      const hardest = recent.reduce((mx, s) => (s.rating > mx.rating ? s : mx), recent[0] || {});
+      const avgRating = total ? (sumRating / total).toFixed(2) : 0;
+      const avgPerDay = total ? (total / days).toFixed(2) : 0;
+      setStats({ hardest, total, avgRating, avgPerDay });
 
-      const requiredData = data.filter((p) => p.student._id === id);
-      console.log("Fetched particular submissions data:", requiredData);
+      // buckets
+      const buckets = {};
+      recent.forEach((s) => {
+        const b = String(Math.floor(s.rating / 100) * 100);
+        buckets[b] = (buckets[b] || 0) + 1;
+      });
+      const labels = Object.keys(buckets).sort((a, b) => +a - +b);
+      setRatingBuckets({ labels, counts: labels.map((l) => buckets[l]) });
 
-      //Fetch contests within the specified days
-      const selectedProblems = requiredData.filter(p => {
-        const problemDate = new Date(p.date);
-        const today = new Date();
-        const daysAgo = today - problemDate;
-        return daysAgo <= d*24*60*60*1000;
-      })
-      console.log("Filtered problems within days:", selectedProblems);
-      setSubmissions(selectedProblems);
-
-      // Stats
-      if (selectedProblems.length) {
-        const total = selectedProblems.length;
-        const sumRating = selectedProblems.reduce((sum, s) => sum + s.rating, 0);
-        const hardest = selectedProblems.reduce(
-          (max, s) => (s.rating > max.rating ? s : max),
-          selectedProblems[0]
-        );
-        console.log("Hardest problem:", hardest);
-        const avgRating = (sumRating / total).toFixed(2);
-        const avgPerDay = (total / problemDays).toFixed(2);
-        setStats({ hardest, total, avgRating, avgPerDay });
-
-        // Rating buckets
-        const buckets = {};
-        selectedProblems.forEach((s) => {
-          const bucket = `${Math.floor(s.rating / 100) * 100}`;
-          buckets[bucket] = (buckets[bucket] || 0) + 1;
-        });
-
-        const labels = Object.keys(buckets).sort((a, b) => +a - +b);
-        setRatingBuckets({ labels, counts: labels.map((l) => buckets[l]) });
-
-        // Heatmap data: count per date
-        const dateCounts = {};
-        requiredData.forEach((s) => {
-          const d = new Date(s.date).toISOString().split("T")[0];
-          dateCounts[d] = (dateCounts[d] || 0) + 1;
-        });
-
-        const heatmapArray = Object.entries(dateCounts).map(
-          ([date, count]) => ({ date, count })
-        );
-        setHeatmapData(heatmapArray);
-      } 
-      else {
-        setStats({ hardest: null, total: 0, avgRating: 0, avgPerDay: 0 });
-        setRatingBuckets({ labels: [], counts: [] });
-        setHeatmapData([]);
-      }
-
+      // heatmap
+      const dateCounts = {};
+      mine.forEach((s) => {
+        const d = new Date(s.date).toISOString().split('T')[0];
+        dateCounts[d] = (dateCounts[d] || 0) + 1;
+      });
+      setHeatmapData(Object.entries(dateCounts).map(([date, count]) => ({ date, count })));
+    } catch (err) {
+      console.error(err);
+    } finally {
       setLoading(false);
-    } 
-    catch (error) {
-      console.log("Could not fetch problem data", error);
     }
   };
 
-  //Fetch student profile data
-  const fetchStudentData = async () => {
-    try{
-      setLoading(true);
-
-      //Fetch student data from backend
-      const data = await fetchAllStudents()
-      console.log("Fetched all students data:", data);
-
-      const requiredData = data.filter((s) => s._id === id);
-      console.log("Fetched particular student data:", requiredData);
-
-      setStudents(requiredData[0]);
-
-      setLoading(false);
-    }
-    catch(error){
-      console.log("Could not fetch student data", error);
-    }
+  if (loading || !student) {
+    return <div className="flex justify-center items-center h-64">Loading...</div>;
   }
 
-  if (loading) return <p>Loading students profile...</p>;
-
   return (
-    <div className="p-4 space-y-8">
-
-      {/* Upper part */}
-      <div className="flex gap-4 items-center justify-between">
-        {/* Button to go back to student table */}
-        <button
-          onClick={() => navigate(`/students`)}
-          className="cursor-pointer px-6 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 text-white rounded-2xl text-lg sm:text-xl transition-colors duration-200 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:focus:ring-blue-600"
-        >
-          Go to Student Table
-        </button>
-
-        <ThemeToggle/>
+    <div className="p-6 space-y-6 w-3/4 mx-auto">
+      <div className="flex justify-between items-center">
+        <Button variant="outline" onClick={() => navigate('/students')}>Back</Button>
+        <ModeToggle />
       </div>
 
-      {/* Contest History */}
-      <section>
-        <h2 className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">Contest History</h2>
-        <div className="mb-4">
-          {[30, 90, 365].map((d) => (
-            <button
-              key={d}
-              onClick={() => setContestDays(d)}
-              className={`cursor-pointer px-3 py-1 mr-2 rounded ${
-                contestDays === d ? "bg-blue-600 text-white" : "bg-gray-200"
-              }`}
-            >
-              {d} days
-            </button>
-          ))}
-        </div>
-        
-        {/* Line Graph */}
-        <Line
-          data={{
-            labels: ratingSeries.labels,
-            datasets: [
-              { label: "Rating", 
-                data: ratingSeries.data, 
-                fill: false,
-                borderColor: 'rgb(75, 192, 192)',
-                tension: 0.1
-              },
-            ],
-          }}
-        />
+      <Card>
+        <CardHeader>
+          <CardTitle>{student.firstName} {student.lastName}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p>Email: {student.email}</p>
+          <p>Phone: {student.phone}</p>
+          <p>CF Handle: {student.handle}</p>
+        </CardContent>
+      </Card>
 
-        <table className="min-w-full bg-white border mt-4">
-          <thead>
-            <tr>
-              <th className="px-4 py-2 border">Date</th>
-              <th className="px-4 py-2 border">Contest Name</th>
-              <th className="px-4 py-2 border">Old → New</th>
-              <th className="px-4 py-2 border">Rank</th>
-              <th className="px-4 py-2 border">Unsolved</th>
-            </tr>
-          </thead>
-          <tbody>
-            {contests.length ? (
-              contests.map((c) => (
-                <tr key={c.contestId} className="text-center hover:bg-gray-50">
-                  <td className="px-4 py-2 border">
-                    {new Date(c.date).toLocaleDateString()}
-                  </td>
-                  <td className="px-4 py-2 border">{c.contestName}</td>
-                  <td className="px-4 py-2 border">
-                    {c.oldRating} → {c.newRating}
-                  </td>
-                  <td className="px-4 py-2 border">{c.rank}</td>
-                  <td className="px-4 py-2 border">{c.unsolvedProblems}</td>
+      <Card>
+        <CardHeader>
+          <CardTitle>Contest History</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue={String(contestDays)} className="mb-4">
+            <TabsList>
+              {[30,90,365].map((d) => (
+                <TabsTrigger key={d} value={String(d)} onClick={() => setContestDays(d)}>
+                  {d}d
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
+          <Line
+            data={{labels: ratingSeries.labels, datasets:[{ label:'Rating', data: ratingSeries.data, fill:false, tension:0.1 }]}}
+          />
+          <Separator className="my-6" />
+          <div className="overflow-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-muted">
+                  {['Date','Name','Old→New','Rank','Unsolved'].map(h => <th key={h} className="p-2">{h}</th>)}
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td colSpan={5} className="py-4">
-                  No contests in this period.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </section>
+              </thead>
+              <tbody>
+                {contests.map((c) => (
+                  <tr key={c.contestId} className="hover:bg-muted/50">
+                    <td className="p-2">{new Date(c.date).toLocaleDateString()}</td>
+                    <td className="p-2">{c.contestName}</td>
+                    <td className="p-2">{c.oldRating}→{c.newRating}</td>
+                    <td className="p-2">{c.rank}</td>
+                    <td className="p-2">{c.unsolvedProblems}</td>
+                  </tr>
+                ))}
+                {!contests.length && (
+                  <tr><td colSpan={5} className="p-4 text-center">No contests.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
 
-      {/* Problem Solving Data */}
-      <section>
-        <h2 className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">Problem Solving Data</h2>
-        <div className="mb-4">
-          
-          {[7, 30, 90].map((d) => (
-            <button
-              key={d}
-              onClick={() => setProblemDays(d)}
-              className={`cursor-pointer px-3 py-1 mr-2 rounded ${
-                problemDays === d ? "bg-blue-600 text-white" : "bg-gray-200"
-              }`}
-            >
-              {d} days
-            </button>
-          ))}
-          
-        </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Problem Solving</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue={String(problemDays)} className="mb-4">
+            <TabsList>
+              {[7,30,90].map((d) => (
+                <TabsTrigger key={d} value={String(d)} onClick={() => setProblemDays(d)}>
+                  {d}d
+                </TabsTrigger>
+              ))}
+            </TabsList>
+          </Tabs>
 
-        {/* Statistical Data */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div>
-            <strong className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">Most Difficult Solved:</strong>{" "}
-            <span className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
-              {`${stats.hardest?.name} (${stats.hardest?.rating})`}
-            </span>
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div>Hardest: <strong>{stats.hardest?.name} ({stats.hardest?.rating})</strong></div>
+            <div>Total: <strong>{stats.total}</strong></div>
+            <div>Avg Rating: <strong>{stats.avgRating}</strong></div>
+            <div>Per Day: <strong>{stats.avgPerDay}</strong></div>
           </div>
-          <div>
-            <strong className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">Total Solved:</strong>
-            <span className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
-              {stats.total}
-            </span>
-          </div>
-          <div>
-            <strong className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">Avg. Rating:</strong>
-            <span className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
-              {stats.avgRating}
-            </span>
-          </div>
-          <div>
-            <strong className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">Avg. per Day:</strong>
-            <span className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
-              {stats.avgPerDay}
-            </span>
-          </div>
-        </div>
 
-        {/* Bar Graph */}
-        <Bar
-          data={{
-            labels: ratingBuckets.labels,
-            datasets: [{ label: "# solved", data: ratingBuckets.counts }],
-          }}
-        />
-      </section>
-      
-      {/* Submission heatmap */}
-      <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-lg max-w-full overflow-auto">
-        <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-3">
-          Submission Heatmap
-        </h2>
-        <CalendarHeatmap
-          className="mx-auto w-full h-64 sm:h-80"
-          startDate={
-            new Date() - 365 * 24 * 60 * 60 * 1000
-          }
-          endDate={new Date()}
-          values={heatmapData}
-          classForValue={(value) => {
-            if (!value) return "color-empty";
-            if (value.count < 2) return "color-scale-1";
-            if (value.count < 5) return "color-scale-2";
-            return "color-scale-3";
-          }}
-          showWeekdayLabels
-        />
-      </div>
+          <Bar data={{ labels: ratingBuckets.labels, datasets:[{ label:'# solved', data: ratingBuckets.counts }] }} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Submission Heatmap</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <CalendarHeatmap
+            startDate={new Date(Date.now() - 365 * 24 * 60 * 60 * 1000)}
+            endDate={new Date()}
+            values={heatmapData}
+            className="w-full h-48"
+            showWeekdayLabels
+            classForValue={(v) => !v ? 'color-empty' : v.count < 2 ? 'color-scale-1' : v.count < 5 ? 'color-scale-2' : 'color-scale-3'}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }
