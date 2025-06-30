@@ -40,11 +40,11 @@ export default function StudentProfile() {
   const [heatmapData, setHeatmapData] = useState([]);
 
   useEffect(() => {
-    fetchContestHistory();
+    fetchContestHistory(contestDays);
   }, [contestDays]);
 
   useEffect(() => {
-    fetchProblemData();
+    fetchProblemData(problemDays);
   }, [problemDays]);
 
   useEffect(() => {
@@ -52,22 +52,32 @@ export default function StudentProfile() {
   }, [])
 
   // Fetch contest history for the student
-  const fetchContestHistory = async () => {
+  const fetchContestHistory = async (d) => {
     try {
       setLoading(true);
 
       // Fetch contests for the student
       const data = await fetchAllContests();
-      console.log("Fetched contests:", data);
+      // console.log("Fetched contests:", data);
 
       const requiredData = data.filter((c) => c.student._id === id);
-      console.log("Fetched particular contests data:", requiredData);
+      // console.log("Fetched particular contests data:", requiredData);
 
-      setContests(requiredData);
+      //Fetch contests within the specified days
+      const selectedContests = requiredData.filter(c => {
+        const contestDate = new Date(c.date);
+        const today = new Date();
+        const daysAgo = today - contestDate;
+        return daysAgo <= d*24*60*60*1000;
+      })
 
-      const sorted = [...requiredData].sort(
+      // console.log("Filtered contests within days:", selectedContests);
+      
+      const sorted = [...selectedContests].sort(
         (a, b) => new Date(a.date) - new Date(b.date)
       );
+      
+      setContests(sorted);
 
       setRatingSeries({
         labels: sorted.map((c) => new Date(c.date).toLocaleDateString()),
@@ -81,8 +91,10 @@ export default function StudentProfile() {
     }
   };
 
+  // console.log("Rating Series:", ratingSeries);
+
   // Fetch problem solving data for the student
-  const fetchProblemData = async () => {
+  const fetchProblemData = async (d) => {
     try {
       setLoading(true);
 
@@ -93,23 +105,32 @@ export default function StudentProfile() {
       const requiredData = data.filter((p) => p.student._id === id);
       console.log("Fetched particular submissions data:", requiredData);
 
-      setSubmissions(requiredData);
+      //Fetch contests within the specified days
+      const selectedProblems = requiredData.filter(p => {
+        const problemDate = new Date(p.date);
+        const today = new Date();
+        const daysAgo = today - problemDate;
+        return daysAgo <= d*24*60*60*1000;
+      })
+      console.log("Filtered problems within days:", selectedProblems);
+      setSubmissions(selectedProblems);
 
       // Stats
-      if (requiredData.length) {
-        const total = requiredData.length;
-        const sumRating = requiredData.reduce((sum, s) => sum + s.rating, 0);
-        const hardest = requiredData.reduce(
+      if (selectedProblems.length) {
+        const total = selectedProblems.length;
+        const sumRating = selectedProblems.reduce((sum, s) => sum + s.rating, 0);
+        const hardest = selectedProblems.reduce(
           (max, s) => (s.rating > max.rating ? s : max),
-          data[0]
+          selectedProblems[0]
         );
+        console.log("Hardest problem:", hardest);
         const avgRating = (sumRating / total).toFixed(2);
         const avgPerDay = (total / problemDays).toFixed(2);
         setStats({ hardest, total, avgRating, avgPerDay });
 
         // Rating buckets
         const buckets = {};
-        requiredData.forEach((s) => {
+        selectedProblems.forEach((s) => {
           const bucket = `${Math.floor(s.rating / 100) * 100}`;
           buckets[bucket] = (buckets[bucket] || 0) + 1;
         });
@@ -203,7 +224,12 @@ export default function StudentProfile() {
           data={{
             labels: ratingSeries.labels,
             datasets: [
-              { label: "Rating", data: ratingSeries.data, fill: false },
+              { label: "Rating", 
+                data: ratingSeries.data, 
+                fill: false,
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+              },
             ],
           }}
         />
@@ -253,7 +279,7 @@ export default function StudentProfile() {
             <button
               key={d}
               onClick={() => setProblemDays(d)}
-              className={`px-3 py-1 mr-2 rounded ${
+              className={`cursor-pointer px-3 py-1 mr-2 rounded ${
                 problemDays === d ? "bg-blue-600 text-white" : "bg-gray-200"
               }`}
             >
@@ -268,16 +294,16 @@ export default function StudentProfile() {
           <div>
             <strong className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">Most Difficult Solved:</strong>{" "}
             <span className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
-              {`${students.mostDifficultProblem?.name} (${students.mostDifficultProblem?.rating})`}
+              {`${stats.hardest?.name} (${stats.hardest?.rating})`}
             </span>
           </div>
           <div>
             <strong className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">Total Solved:</strong>
             <span className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
-              {students?.problems?.length}
+              {stats.total}
             </span>
           </div>
-          {/* <div>
+          <div>
             <strong className="mt-2 text-sm sm:text-base md:text-lg text-gray-700 dark:text-gray-300">Avg. Rating:</strong>
             <span className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
               {stats.avgRating}
@@ -288,7 +314,7 @@ export default function StudentProfile() {
             <span className="text-xl sm:text-2xl font-bold text-blue-600 dark:text-blue-400">
               {stats.avgPerDay}
             </span>
-          </div> */}
+          </div>
         </div>
 
         {/* Bar Graph */}
@@ -298,31 +324,29 @@ export default function StudentProfile() {
             datasets: [{ label: "# solved", data: ratingBuckets.counts }],
           }}
         />
-
-        {/* Submission heatmap */}
-        <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-lg max-w-full overflow-auto">
-          <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-3">
-            Submission Heatmap
-          </h2>
-          <CalendarHeatmap
-            className="mx-auto w-full h-64 sm:h-80"
-            startDate={
-              new Date(new Date().setDate(new Date().getDate() - problemDays))
-            }
-            endDate={new Date()}
-            values={heatmapData}
-            classForValue={(value) => {
-              if (!value) return "color-empty";
-              if (value.count < 2) return "color-scale-1";
-              if (value.count < 5) return "color-scale-2";
-              return "color-scale-3";
-            }}
-            showWeekdayLabels
-          />
-        </div>
-
       </section>
-
+      
+      {/* Submission heatmap */}
+      <div className="p-4 bg-white dark:bg-gray-800 rounded-2xl shadow-lg max-w-full overflow-auto">
+        <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-3">
+          Submission Heatmap
+        </h2>
+        <CalendarHeatmap
+          className="mx-auto w-full h-64 sm:h-80"
+          startDate={
+            new Date() - 365 * 24 * 60 * 60 * 1000
+          }
+          endDate={new Date()}
+          values={heatmapData}
+          classForValue={(value) => {
+            if (!value) return "color-empty";
+            if (value.count < 2) return "color-scale-1";
+            if (value.count < 5) return "color-scale-2";
+            return "color-scale-3";
+          }}
+          showWeekdayLabels
+        />
+      </div>
     </div>
   );
 }
