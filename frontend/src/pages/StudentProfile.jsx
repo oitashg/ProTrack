@@ -123,11 +123,14 @@ export default function StudentProfile() {
 
   return (
     <div className="p-6 space-y-6 w-3/4 mx-auto">
+
+      {/* Header */}
       <div className="flex justify-between items-center">
         <Button variant="outline" onClick={() => navigate('/students')}>Back</Button>
         <ModeToggle />
       </div>
 
+      {/* Details of the student */}
       <Card>
         <CardHeader>
           <CardTitle>{student.firstName} {student.lastName}</CardTitle>
@@ -139,6 +142,7 @@ export default function StudentProfile() {
         </CardContent>
       </Card>
 
+      {/* Contest History and Line Graph */}
       <Card>
         <CardHeader>
           <CardTitle>Contest History</CardTitle>
@@ -182,7 +186,8 @@ export default function StudentProfile() {
           </div>
         </CardContent>
       </Card>
-
+      
+      {/* Problem solving history and bar graph */}
       <Card>
         <CardHeader>
           <CardTitle>Problem Solving</CardTitle>
@@ -208,7 +213,8 @@ export default function StudentProfile() {
           <Bar data={{ labels: ratingBuckets.labels, datasets:[{ label:'# solved', data: ratingBuckets.counts }] }} />
         </CardContent>
       </Card>
-
+      
+      {/* Submission Heatmap */}
       <Card>
         <CardHeader>
           <CardTitle>Submission Heatmap</CardTitle>
@@ -224,6 +230,7 @@ export default function StudentProfile() {
           />
         </CardContent>
       </Card>
+      
     </div>
   );
 }

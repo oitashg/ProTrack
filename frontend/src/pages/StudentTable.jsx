@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import CFHandleModal from '../components/CFHandleModal';
 import { deleteStudent, fetchAllStudents, toggleEmailSetting } from '../services/operations/studentAPI.js';
 import { getCronTimeAPI, setCronTimeAPI } from '../services/operations/cronAPI.js';
 import { useNavigate } from 'react-router-dom';
-import TimePicker from 'react-time-picker';
+import logo1 from '../assets/Logo/protrack-logo.png';
+import logo2 from '../assets/Logo/protrack-logo-dark.png';
 import 'react-time-picker/dist/TimePicker.css';
 import 'react-clock/dist/Clock.css';
 
@@ -12,6 +14,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Switch } from '@/components/ui/switch';
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 import { ModeToggle } from '@/components/ModeToggle';
 
 export default function StudentTable() {
@@ -39,8 +43,8 @@ export default function StudentTable() {
   };
 
   const parseCronDate = (str) => {
-    const [, min, hr] = str.split(' ');
-    return `${hr}:${min}`;
+    const [sec, min, hr] = str.split(' ');
+    return `${hr}:${min}:${sec}`;
   };
 
   useEffect(() => {
@@ -52,8 +56,8 @@ export default function StudentTable() {
     }
   }, [syncTime]);
 
-  const [hr, min] = startTime.split(':');
-  const cronTimeData = `00 ${min} ${hr} * * *`;
+  const [hr, min, sec] = startTime.split(':');
+  const cronTimeData = `${sec} ${min} ${hr} * * *`;
 
   // Fetch students
   const fetchStudentsData = async () => {
@@ -73,6 +77,7 @@ export default function StudentTable() {
     fetchCronTime();
   }, []);
 
+  //Function to download in csv format
   const handleDownloadCSV = () => {
     const header = ['First name','Last name','Email','Phone','CF Handle','Current Rating','Max Rating','Last Sync','Reminders Sent','Auto Email'];
     const rows = students.map(s => [
@@ -93,11 +98,24 @@ export default function StudentTable() {
 
   return (
     <div className="p-6 space-y-6">
+
+      {/* Logo */}
+      <div className='w-1/4'>
+        <Link to="/">
+          <img src={logo1} alt={"not found"} width={100} height={42} loading='lazy' className='block dark:hidden'/>
+        </Link>
+        <Link to="/">
+          <img src={logo2} alt={"not found"} width={100} height={42} loading='lazy' className='hidden dark:block'/>
+        </Link>
+      </div>
+
+      {/* Heading */}
       <div className="flex justify-between items-center">
         <h1 className="text-4xl font-bold">Enrolled Students</h1>
         <ModeToggle />
       </div>
 
+      {/* Sync */}
       <Card>
         <CardHeader>
           <CardTitle>Manage Sync & Students</CardTitle>
@@ -109,7 +127,19 @@ export default function StudentTable() {
               Add Student
             </Button>
             <div className="flex items-center space-x-2">
-              <TimePicker onChange={setStartTime} value={startTime} disableClock={true} />
+              <div className="flex flex-col gap-3">
+                <Label htmlFor="time-picker" className="px-1">
+                  Time
+                </Label>
+                <Input
+                  type="time"
+                  id="time-picker"
+                  step="1"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="bg-background appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none"
+                />
+              </div>
               <Button size="sm" onClick={async () => { await setCronTimeAPI({ cronTimeData }); fetchCronTime(); }}>
                 Set Sync
               </Button>
@@ -121,6 +151,7 @@ export default function StudentTable() {
         </CardContent>
       </Card>
 
+      {/* Student List Table */}
       <Card>
         <CardHeader>
           <CardTitle>Student List</CardTitle>
@@ -178,7 +209,8 @@ export default function StudentTable() {
           </Table>
         </CardContent>
       </Card>
-
+      
+      {/* Modal for Add/Edit Student */}
       <CFHandleModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
