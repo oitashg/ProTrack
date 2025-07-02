@@ -46,6 +46,7 @@ export default function StudentProfile() {
     fetchStudentData()
   }, [])
 
+  //fetch student data
   const fetchStudentData = async () => {
     setLoading(true);
     try {
@@ -58,11 +59,12 @@ export default function StudentProfile() {
     }
   };
 
+  // fetch contest history
   const fetchContestHistory = async (days) => {
     setLoading(true);
     try {
       const all = await fetchAllContests();
-      const mine = all.filter((c) => c.student._id === id);
+      const mine = all.filter((c) => c.student === id);
       const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
       const recent = mine.filter((c) => new Date(c.date).getTime() >= cutoff);
       const sorted = recent.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -78,11 +80,12 @@ export default function StudentProfile() {
     }
   };
 
+  // fetch problem data
   const fetchProblemData = async (days) => {
     setLoading(true);
     try {
       const all = await fetchAllProblems();
-      const mine = all.filter((p) => p.student._id === id);
+      const mine = all.filter((p) => p.student === id);
       const cutoff = Date.now() - days * 24 * 60 * 60 * 1000;
       const recent = mine.filter((p) => new Date(p.date).getTime() >= cutoff);
 
@@ -118,7 +121,7 @@ export default function StudentProfile() {
   };
 
   if (loading || !student) {
-    return <div className="flex justify-center items-center h-64">Loading...</div>;
+    return <div className="spinner"></div>;
   }
 
   return (
@@ -133,19 +136,19 @@ export default function StudentProfile() {
       {/* Details of the student */}
       <Card>
         <CardHeader>
-          <CardTitle>{student.firstName} {student.lastName}</CardTitle>
+          <CardTitle><strong>{student.firstName} {student.lastName}</strong></CardTitle>
         </CardHeader>
         <CardContent>
-          <p>Email: {student.email}</p>
-          <p>Phone: {student.phone}</p>
-          <p>CF Handle: {student.handle}</p>
+          <p><strong>Email: </strong>{student.email}</p>
+          <p><strong>Phone: </strong>{student.phone}</p>
+          <p><strong>CF Handle: </strong>{student.handle}</p>
         </CardContent>
       </Card>
 
       {/* Contest History and Line Graph */}
       <Card>
         <CardHeader>
-          <CardTitle>Contest History</CardTitle>
+          <CardTitle>Contests</CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue={String(contestDays)} className="mb-4">
@@ -157,9 +160,13 @@ export default function StudentProfile() {
               ))}
             </TabsList>
           </Tabs>
-          <Line
-            data={{labels: ratingSeries.labels, datasets:[{ label:'Rating', data: ratingSeries.data, fill:false, tension:0.1 }]}}
-          />
+          {
+            contests.length > 0 && (
+              <Line
+                data={{labels: ratingSeries.labels, datasets:[{ label:'Rating', data: ratingSeries.data, fill:false, tension:0.1 }]}}
+              />
+            )
+          }
           <Separator className="my-6" />
           <div className="overflow-auto">
             <table className="w-full text-sm">
@@ -179,7 +186,7 @@ export default function StudentProfile() {
                   </tr>
                 ))}
                 {!contests.length && (
-                  <tr><td colSpan={5} className="p-4 text-center">No contests.</td></tr>
+                  <tr><td colSpan={5} className="p-4 text-center">No contests</td></tr>
                 )}
               </tbody>
             </table>
@@ -190,7 +197,7 @@ export default function StudentProfile() {
       {/* Problem solving history and bar graph */}
       <Card>
         <CardHeader>
-          <CardTitle>Problem Solving</CardTitle>
+          <CardTitle>Problems</CardTitle>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue={String(problemDays)} className="mb-4">
@@ -202,22 +209,32 @@ export default function StudentProfile() {
               ))}
             </TabsList>
           </Tabs>
+          
+          {
+            stats.total > 0 && (
+              <>
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div>Hardest: <strong>{stats.hardest?.name} ({stats.hardest?.rating})</strong></div>
+                  <div>Total: <strong>{stats.total}</strong></div>
+                  <div>Avg Rating: <strong>{stats.avgRating}</strong></div>
+                  <div>Per Day: <strong>{stats.avgPerDay}</strong></div>
+                </div>
 
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div>Hardest: <strong>{stats.hardest?.name} ({stats.hardest?.rating})</strong></div>
-            <div>Total: <strong>{stats.total}</strong></div>
-            <div>Avg Rating: <strong>{stats.avgRating}</strong></div>
-            <div>Per Day: <strong>{stats.avgPerDay}</strong></div>
-          </div>
+                <Bar data={{ labels: ratingBuckets.labels, datasets:[{ label:'# solved', data: ratingBuckets.counts }] }} />
+              </>
+            )
+          }
 
-          <Bar data={{ labels: ratingBuckets.labels, datasets:[{ label:'# solved', data: ratingBuckets.counts }] }} />
+          {!stats.total && (
+            <p className='text-center'>No problems</p>
+          )}
         </CardContent>
       </Card>
       
       {/* Submission Heatmap */}
       <Card>
         <CardHeader>
-          <CardTitle>Submission Heatmap</CardTitle>
+          <CardTitle>Submissions</CardTitle>
         </CardHeader>
         <CardContent>
           <CalendarHeatmap

@@ -1,39 +1,39 @@
 import { useNavigate } from 'react-router-dom';
-import { Link } from 'react-router-dom';
 import { ModeToggle } from '@/components/ModeToggle';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import logo1 from '../assets/Logo/protrack-logo.png';
-import logo2 from '../assets/Logo/protrack-logo-dark.png';
+import { useTheme } from '@/components/ThemeProvider';
 
 const Home = () => {
   const navigate = useNavigate();
+  const svgbg = '../code-forces.svg';
+
+  const { theme } = useTheme()
 
   return (
-    <div className="min-h-screen w-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 transition-colors duration-300 p-4">
+    <div className="w-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 transition-colors duration-300">
 
-      {/* Logo */}
-      <Link to="/">
-        <img src={logo1} alt={"not found"} width={150} height={42} loading='lazy' className='block dark:hidden'/>
-      </Link>
-      <Link to="/">
-        <img src={logo2} alt={"not found"} width={150} height={42} loading='lazy' className='hidden dark:block'/>
-      </Link>
+      <div className='w-3/4 h-screen'>
+        <img src={svgbg} alt="bg" className={theme === 'dark' ? 'h-full w-full bg-gray-900' :  'h-full w-full bg-gray-100'} />
+      </div>
 
-      <Card className="max-w-md w-full">
-        <CardContent className="text-center space-y-6">
-          <h1 className="text-4xl font-extrabold text-gray-800 dark:text-gray-100">
+
+      <div className="w-1/4 h-screen flex items-center justify-center bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg">
+
+        <div className='flex flex-col gap-4 border-2 border-white dark:border-gray-800  w-full h-full items-center justify-center'>
+          <p className="text-4xl font-extrabold text-gray-800 dark:text-gray-100">
             ProTrack
-          </h1>
-          <Button size="lg" className="w-full" onClick={() => navigate('/students')}>
-            Go to Table
+          </p>
+          <Button className='px-4 py-2' onClick={() => navigate('/students')}>
+            Let's Go
           </Button>
-        </CardContent>
-        <CardFooter className="flex justify-center">
+        </div>
+
+      </div>
+
+      <div className="absolute bottom-4 right-4">
           <ModeToggle />
-        </CardFooter>
-      </Card>
-      
+        </div>
+
     </div>
   );
 };
