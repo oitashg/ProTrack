@@ -332,9 +332,6 @@ export async function getAllStudents(req, res) {
     try {
         // Fetch all students with populated contests and problems
         const students = await Student.find()
-            .populate("contests")
-            .populate("problems")
-            .exec();
 
         res.status(200).json(students);
     } 

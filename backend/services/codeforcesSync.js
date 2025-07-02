@@ -127,9 +127,6 @@ export async function syncStudent(studentId) {
     },
     { new: true }
   )
-  .populate("contests")
-  .populate("problems")
-  .exec();
 
   // console.log("Student synced successfully:", updatedStudent);
 

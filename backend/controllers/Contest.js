@@ -5,8 +5,6 @@ export async function getAllContests(req, res) {
     try {
         // Fetch all contest history
         const contests = await Contest.find()
-            .populate("student")
-            .exec();
 
         res.status(200).json(contests);
     } 

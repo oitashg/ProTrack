@@ -5,8 +5,6 @@ export async function getAllProblems(req, res) {
     try {
         // Fetch all problem history
         const problems = await Problem.find()
-            .populate("student")
-            .exec();
 
         res.status(200).json(problems);
     } 
