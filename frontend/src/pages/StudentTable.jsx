@@ -92,7 +92,7 @@ export default function StudentTable() {
 	if (loading) return <div className="spinner"></div>
 
 	return (
-		<div className="p-6 space-y-6">
+		<div className="p-6 space-y-6 w-11/12 mx-auto">
 
 			{/* Heading */}
 			<div className="flex justify-between items-center">
