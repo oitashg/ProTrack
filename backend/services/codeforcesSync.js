@@ -1,8 +1,11 @@
-import nodemailer from "nodemailer";
 import axios from "axios";
 import Student from "../models/Student.js";
 import Contest from "../models/Contest.js";
 import Problem from "../models/Problem.js";
+import { emailQueue } from "../../email-service/src/queues.js";
+
+import dotenv from "dotenv";
+dotenv.config();
 
 //sync mechanism to fetch data from codeforces api and update database for each student
 export async function syncStudent(studentId) {
@@ -136,8 +139,8 @@ export async function syncStudent(studentId) {
     const timeGap = Date.now() - new Date(updatedStudent?.lastProblemSubmitted).getTime();
 
     if (timeGap > 604800000) {
-      // Send reminder
-      await sendReminderEmail(student);
+      //call email queue to send reminder
+      await emailQueue.add('reminder', {student});
       student.remindersSent += 1;
     }
   }
@@ -168,29 +171,3 @@ export async function syncAllStudents() {
     }
   }
 }
-
-// Reminder email to students who haven't submitted in the past week
-export const sendReminderEmail = async (student) => {
-  try {
-    let transporter = nodemailer.createTransport({
-      host: process.env.MAIL_HOST,
-      auth: {
-        user: process.env.MAIL_USER,
-        pass: process.env.MAIL_PASS,
-      },
-    });
-
-    let info = await transporter.sendMail({
-      from: '"Codeforces Coach" <no-reply@yourapp.com>',
-      to: student.email,
-      subject: "Time to get back to problem solving!",
-      text: `Hi ${student.firstName},\n\nWe noticed you haven’t submitted in the past week. Keep those CF streaks alive! 🚀\n\n—Your Friendly Reminder Bot`,
-    });
-
-    console.log(info);
-    return info;
-  } 
-  catch (error) {
-    console.log(error.message);
-  }
-};
