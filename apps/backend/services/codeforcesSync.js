@@ -2,7 +2,8 @@ import axios from "axios";
 import Student from "../models/Student.js";
 import Contest from "../models/Contest.js";
 import Problem from "../models/Problem.js";
-import { emailQueue } from "@protrack/email-service/src/queues.js"; 
+// import { emailQueue } from "@protrack/email-service/src/queues.js"; 
+import {emailQueue} from "../../email-service/src/queues.js"; 
 
 import dotenv from "dotenv";
 dotenv.config();
