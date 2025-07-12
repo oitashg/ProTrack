@@ -12,6 +12,7 @@
     "type": "git",
     "url": "git+https://github.com/oitashg/ProTrack.git"
   },
+  "packageManager": "npm@10.9.2",
   "keywords": [],
   "author": "",
   "license": "ISC",
