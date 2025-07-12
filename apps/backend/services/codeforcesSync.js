@@ -2,7 +2,7 @@ import axios from "axios";
 import Student from "../models/Student.js";
 import Contest from "../models/Contest.js";
 import Problem from "../models/Problem.js";
-import { emailQueue } from "../../email-service/src/queues.js";
+import { emailQueue } from "@protrack/email-service/src/queues.js"; 
 
 import dotenv from "dotenv";
 dotenv.config();
@@ -33,25 +33,17 @@ export async function syncStudent(studentId) {
   const existingContests = await Contest.find({student: student._id}).select('contestId').lean();
   const existingProblems = await Problem.find({student: student._id}).select('name').lean();
 
-  console.log("Existing Contests:", existingContests);
-  console.log("Existing Problems:", existingProblems);
-
   //Extract the new contest and problems data
   const newContests = history?.filter(c => c.contestId && !existingContests.some(ec => ec.contestId === c.contestId));
   const newProblems = problems?.filter(p => p.problem && p.verdict === "OK" && !existingProblems.some(ep => ep.name === p.problem.name));
 
-  console.log("New Contests:", newContests);
-  console.log("New Problems:", newProblems);
-
   const participatedContest = newContests?.map(c => c.contestId)
-  // console.log("Participated Contests:", participatedContest);
 
   const solvedProblems = newProblems?.filter(sub => 
     participatedContest.includes(sub.contestId) &&
     sub.author.participantType === "CONTESTANT" &&
     sub.verdict === "OK"
   )
-  // console.log("solved Problems:", solvedProblems);
 
   //Add new contests and update contest schema
   const upsertedContests = await Promise.all(
@@ -131,8 +123,6 @@ export async function syncStudent(studentId) {
     { new: true }
   )
 
-  // console.log("Student synced successfully:", updatedStudent);
-
   //Inactivity detection
   if (!student.emailDisabled) {
     // Count submissions in the past 7 days
@@ -153,7 +143,6 @@ export async function syncStudent(studentId) {
 export async function syncAllStudents() {
   //extract data of all students with cfHandle
   const students = await Student.find({ handle: { $exists: true, $ne: "" } });
-  // console.log("Students data -> ", students);
 
   if (students.length === 0) {
     console.log("No students to sync.");
