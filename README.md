@@ -176,7 +176,3 @@ A standard cron expression consists of the following fields:
 3. Use the filter dropdowns in **Contest History** and **Problem Data** to adjust time ranges.
 4. Toggle email reminders in the student profile to enable/disable automated emails.
 5. Download the full student list as CSV using the **Export** button.
-
-## Video Walkthrough
-
-Watch the video here -> [ProTrack](https://drive.google.com/file/d/169O4oAksGcYzPrsW1fgZ3oiORr0hMuNC/view?usp=sharing)
