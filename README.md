@@ -93,7 +93,7 @@ A standard cron expression consists of the following fields:
 
 ## Codeforces API
 
-* You can get all the information about Codeforces data like data of user, contest or problems along with Methods and Return Objects from [Codeforces API](https://codeforces.com/apiHelp)
+* You can get all the information about Codeforces data like data of user, contests or problems along with Methods and Return Objects from [Codeforces API](https://codeforces.com/apiHelp)
 
 ## 🧹 Usage
 
