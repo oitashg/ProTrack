@@ -24,7 +24,7 @@ getCronTime()
 app.use(express.json())
 app.use(
     cors({
-        origin: "https://protrack-kappa.vercel.app",
+        origin: "https://protrack-zeta.vercel.app",
         credentials: true,
     })
 )
