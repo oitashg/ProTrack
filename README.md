@@ -50,9 +50,9 @@
 
 4. **Inactivity Detection & Reminders**
 
-   * After each sync, detect students with no submissions in the last 7 days
-   * Send automated email reminders
-   * Track and display reminder count per student
+   * Backend enqueues sendReminder jobs to the BullMQ “reminder” queue (**Redis**) immediately after each sync
+   * Email-service’s **BullMQ** Worker pulls sendReminder jobs from Redis and sends templated reminder emails via your transporter
+   * Worker, on successful send, calls the backend API to increment that student’s reminderCount field
    * Option to disable reminders on a per-student basis
 
 ## ⚙️ Configuration
